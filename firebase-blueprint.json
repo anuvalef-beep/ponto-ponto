@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Punch": {
+      "title": "Punch",
+      "description": "A single clock-in/out record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["entrada", "pausa", "retorno", "fim"] },
+        "timestamp": { "type": "number" },
+        "vehiclePrefix": { "type": "string" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["id", "type", "timestamp"]
+    },
+    "Damage": {
+      "title": "Damage",
+      "description": "A record of a vehicle damage.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "description": { "type": "string" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "description", "photoUrl"]
+    },
+    "DayLog": {
+      "title": "DayLog",
+      "description": "A log of all punches for a specific day.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "carPrefix": { "type": "string" },
+        "punches": { "type": "array", "items": { "$ref": "Punch" } },
+        "damages": { "type": "array", "items": { "$ref": "Damage" } }
+      },
+      "required": ["date", "carPrefix", "punches"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "User application settings.",
+      "type": "object",
+      "properties": {
+        "carPrefixes": { "type": "array", "items": { "type": "string" } },
+        "theme": { "type": "string", "enum": ["light", "dark", "system"] },
+        "alarmsEnabled": { "type": "boolean" },
+        "notificationEnabled": { "type": "boolean" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data."
+    },
+    "/users/{userId}/logs/{date_carPrefix}": {
+      "schema": "DayLog",
+      "description": "Daily punch logs for a user, keyed by date and car prefix."
+    },
+    "/users/{userId}/config/settings": {
+      "schema": "AppSettings",
+      "description": "User application settings."
+    }
+  }
+}

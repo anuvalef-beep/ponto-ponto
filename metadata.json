@@ -1,0 +1,5 @@
+{
+  "name": "Registro de Ponto",
+  "description": "Aplicativo de registro de ponto para motoristas com controle de prefixo de veículo e relatórios diários/mensais.",
+  "requestFramePermissions": ["camera"]
+}

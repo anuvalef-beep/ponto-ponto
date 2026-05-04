@@ -1,0 +1,17 @@
+{
+  "name": "Ponto & Frota",
+  "short_name": "PontoFrota",
+  "description": "Aplicativo de registro de ponto para motoristas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

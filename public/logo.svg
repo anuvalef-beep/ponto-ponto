@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cyan Speed Lines -->
+  <rect x="100" y="210" width="100" height="24" rx="4" fill="#20C4CB"/>
+  <rect x="80" y="260" width="30" height="24" rx="4" fill="#20C4CB"/>
+  <rect x="130" y="260" width="120" height="24" rx="4" fill="#20C4CB"/>
+  <rect x="30" y="310" width="30" height="24" rx="4" fill="#20C4CB"/>
+  <rect x="80" y="310" width="130" height="24" rx="4" fill="#20C4CB"/>
+
+  <!-- Navy Stopwatch -->
+  <path d="M 215 365 A 120 120 0 1 0 215 195" stroke="#253141" stroke-width="32" stroke-linecap="round"/>
+  
+  <!-- Top Button -->
+  <rect x="250" y="100" width="100" height="28" rx="8" fill="#253141"/>
+  <rect x="275" y="128" width="50" height="28" fill="#253141"/>
+  
+  <!-- Side Button -->
+  <g transform="rotate(45 396 184)">
+    <rect x="396" y="168" width="32" height="32" rx="8" fill="#253141"/>
+  </g>
+  
+  <!-- Center Hand -->
+  <circle cx="300" cy="280" r="24" fill="#253141"/>
+  <path d="M 285 295 L 355 215 A 8 8 0 0 1 365 225 L 305 300 Z" fill="#253141"/>
+</svg>
