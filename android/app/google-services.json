@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "569033496375",
+    "firebase_url": "https://registro-de-ponto-ea242-default-rtdb.firebaseio.com",
+    "project_id": "registro-de-ponto-ea242",
+    "storage_bucket": "registro-de-ponto-ea242.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569033496375:android:f3164c4f312857539cacb2",
+        "android_client_info": {
+          "package_name": "com.appnovos.ponto_ponto"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "569033496375-oh6qt8f9ggctnqkm2o5s1j0p6kl9lkjq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnyeQTBgqT0AHZQrwZ_F0JEa2zBWY38OA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "569033496375-oh6qt8f9ggctnqkm2o5s1j0p6kl9lkjq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

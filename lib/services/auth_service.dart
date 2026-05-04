@@ -7,8 +7,9 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  AuthService() {
-    // Listen to auth changes
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal() {
     _auth.authStateChanges().listen((user) async {
       AppSignals.user.value = user;
       if (user != null) {
