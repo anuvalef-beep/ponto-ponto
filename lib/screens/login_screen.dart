@@ -12,8 +12,18 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
+      body: Watch((context) {
+        if (AppSignals.message.value != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppSignals.message.value!)),
+            );
+            AppSignals.message.value = null;
+          });
+        }
+        
+        return Stack(
+          children: [
           // Background Decoration
           Positioned(
             top: -100,
@@ -103,36 +113,49 @@ class LoginScreen extends StatelessWidget {
                       // Google Login Button
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => AuthService().signInWithGoogle(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.white 
-                                : Colors.black,
-                            foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                                ? Colors.black 
-                                : Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(LucideIcons.logIn, size: 20),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Entrar com Google',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                        child: Watch((context) {
+                          final isLoading = AppSignals.isLoading.watch(context);
+                          
+                          return ElevatedButton(
+                            onPressed: isLoading ? null : () {
+                              debugPrint('LoginScreen: Botão Google pressionado');
+                              AuthService().signInWithGoogle();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                                  ? Colors.white 
+                                  : Colors.black,
+                              foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                                  ? Colors.black 
+                                  : Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                            ],
-                          ),
-                        ),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                isLoading 
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+                                    )
+                                  : const Icon(LucideIcons.logIn, size: 20),
+                                const SizedBox(width: 12),
+                                Text(
+                                  isLoading ? 'Entrando...' : 'Entrar com Google',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                       ).animate().fadeIn(delay: 1000.ms).scale(begin: const Offset(0.9, 0.9)),
                       
                       const SizedBox(height: 24),
