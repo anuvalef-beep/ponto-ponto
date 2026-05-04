@@ -25,7 +25,7 @@ class AppTheme {
         letterSpacing: -1.5,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: darkSurface.withOpacity(0.7),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -43,7 +43,7 @@ class AppTheme {
       onSurface: const Color(0xFF0F172A),
     ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.white.withOpacity(0.7),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),

@@ -53,7 +53,7 @@ class _ClockScreenState extends State<ClockScreen> {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     
     final punch = Punch(
-      id: const Uuid().v4(),
+      id: Uuid().v4(),
       type: type,
       timestamp: DateTime.now(),
       carPrefix: 'FROTA-01', // TODO: Get from settings
@@ -61,7 +61,7 @@ class _ClockScreenState extends State<ClockScreen> {
 
     final currentLog = AppSignals.currentDayLog.value;
     final updatedPunches = currentLog != null 
-        ? List<Punch>.from(currentLog.punches)..add(punch)
+        ? [...currentLog.punches, punch]
         : [punch];
     
     final newLog = DayLog(
