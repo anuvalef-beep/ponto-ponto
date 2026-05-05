@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "569033496375-rsehepu1hve1h00utdpne4o0hk34cn5r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appnovos.ponto_ponto",
+            "certificate_hash": "588e8a5421fb2769affb1096919e8e64fd851a09"
+          }
+        },
+        {
           "client_id": "569033496375-oh6qt8f9ggctnqkm2o5s1j0p6kl9lkjq.apps.googleusercontent.com",
           "client_type": 3
         }
