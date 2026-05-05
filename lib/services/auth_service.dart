@@ -62,6 +62,10 @@ class AuthService {
       debugPrint('AuthService: Autenticando com Firebase...');
       final userCredential = await _auth.signInWithCredential(credential);
       debugPrint('AuthService: Autenticação Firebase sucesso: ${userCredential.user?.uid}');
+      
+      // Update state immediately to prevent routing issues
+      await _handleUserChange(userCredential.user);
+      
       return userCredential;
     } catch (e) {
       debugPrint('AuthService: Erro no Google Sign In: $e');

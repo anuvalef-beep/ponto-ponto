@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
+import '../signals/app_signals.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -13,10 +15,11 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Watch((context) {
-        if (AppSignals.message.value != null) {
+        final errorMessage = AppSignals.message.watch(context);
+        if (errorMessage != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppSignals.message.value!)),
+              SnackBar(content: Text(errorMessage)),
             );
             AppSignals.message.value = null;
           });
