@@ -39,8 +39,6 @@ migrate_working_dir/
 **/android/app/release/
 .gradle/
 captures/
-**/google-services.json
-
 # iOS related
 **/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/flutter_export_environment.sh
