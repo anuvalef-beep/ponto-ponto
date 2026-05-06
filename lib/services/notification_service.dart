@@ -51,7 +51,6 @@ class NotificationService {
           category: AndroidNotificationCategory.alarm,
           audioAttributesUsage: AudioAttributesUsage.alarm,
           playSound: true,
-          insistent: true,
           turnScreenOn: true,
           visibility: NotificationVisibility.public,
           styleInformation: BigTextStyleInformation(''),
