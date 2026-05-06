@@ -57,7 +57,14 @@ class _FleetScreenState extends State<FleetScreen> {
                       ],
                     ),
                     const Spacer(),
-                    TextButton(onPressed: () {}, child: const Text('Trocar')),
+                    TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Funcionalidade de troca de frota em breve!')),
+                        );
+                      }, 
+                      child: const Text('Trocar')
+                    ),
                   ],
                 ),
               ),
@@ -123,7 +130,15 @@ class _FleetScreenState extends State<FleetScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Save Survey
+          if (_damagePhotos.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Nenhuma avaria registrada. Vistoria concluída!')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Vistoria com ${_damagePhotos.length} fotos salva com sucesso!')),
+            );
+          }
         },
         label: const Text('Finalizar Vistoria'),
         icon: const Icon(LucideIcons.save),

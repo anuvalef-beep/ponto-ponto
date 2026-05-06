@@ -21,8 +21,17 @@ class HistoryScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(LucideIcons.calendar),
-            onPressed: () {
-              // TODO: Select Month
+            onPressed: () async {
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: AppSignals.selectedMonth.value,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+                helpText: 'Selecione o mês do histórico',
+              );
+              if (picked != null) {
+                AppSignals.selectedMonth.value = picked;
+              }
             },
           ),
         ],

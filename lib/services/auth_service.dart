@@ -77,8 +77,25 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    debugPrint('AuthService: Fazendo logout...');
-    await _googleSignIn.signOut();
-    await _auth.signOut();
+    try {
+      debugPrint('AuthService: Fazendo logout...');
+      AppSignals.isLoading.value = true;
+      
+      // Limpa a sessão do Google e do Firebase
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect().catchError((e) => debugPrint('Erro ao desconectar Google: $e'));
+      await _auth.signOut();
+      
+      // Limpa os estados locais para não sobrar rastro da conta anterior
+      AppSignals.user.value = null;
+      AppSignals.settings.value = AppSettings(alarms: {});
+      AppSignals.currentDayLog.value = null;
+      
+      debugPrint('AuthService: Logout concluído com sucesso.');
+    } catch (e) {
+      debugPrint('AuthService: Erro ao sair: $e');
+    } finally {
+      AppSignals.isLoading.value = false;
+    }
   }
 }
