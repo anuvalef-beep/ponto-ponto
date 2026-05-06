@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import './database_service.dart';
 import '../signals/app_signals.dart';
+import '../models/app_settings.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
