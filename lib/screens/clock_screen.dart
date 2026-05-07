@@ -10,6 +10,7 @@ import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import '../services/database_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'permissions_screen.dart';
 
 class ClockScreen extends StatefulWidget {
