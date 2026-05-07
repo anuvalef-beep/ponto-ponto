@@ -42,27 +42,10 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       home: Watch((context) {
-        final isLoading = AppSignals.isLoading.watch(context);
-        final user = AppSignals.user.watch(context);
         final isAuthenticated = AppSignals.isAuthenticated.watch(context);
         
-        debugPrint('MyApp: Rebuilding Home (isLoading: $isLoading, user: ${user?.uid}, isAuthenticated: $isAuthenticated)');
+        debugPrint('MyApp: Rebuilding Home (isAuthenticated: $isAuthenticated)');
 
-        if (isLoading && !isAuthenticated) {
-          return const Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Carregando...'),
-                ],
-              ),
-            ),
-          );
-        }
-        
         return isAuthenticated ? const MainScreen() : const LoginScreen();
       }),
     );

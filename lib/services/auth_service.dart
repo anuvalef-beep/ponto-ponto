@@ -70,17 +70,17 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       debugPrint('AuthService: Autenticação Firebase sucesso: ${userCredential.user?.uid}');
       
-      // Desliga o carregamento antes de mudar o usuário para garantir transição suave
-      AppSignals.isLoading.value = false;
-      
       // Update state immediately to prevent routing issues
       await _handleUserChange(userCredential.user);
+      
+      // Desliga o carregamento por último
+      AppSignals.isLoading.value = false;
       
       return userCredential;
     } catch (e) {
       debugPrint('AuthService: Erro no Google Sign In: $e');
-      AppSignals.message.value = 'Erro ao entrar com Google: $e';
       AppSignals.isLoading.value = false;
+      AppSignals.message.value = 'Erro ao entrar com Google: $e';
       return null;
     }
   }
