@@ -26,6 +26,17 @@ class _FleetScreenState extends State<FleetScreen> {
   void initState() {
     super.initState();
     _prefixController = TextEditingController(text: AppSignals.currentCarPrefix.value);
+    _loadTodayLog();
+  }
+
+  Future<void> _loadTodayLog() async {
+    if (AppSignals.user.value == null) return;
+    if (AppSignals.currentDayLog.value != null) return;
+    
+    final db = DatabaseService(uid: AppSignals.user.value!.uid);
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final log = await db.getDayLog(today);
+    AppSignals.currentDayLog.value = log;
   }
 
   @override
@@ -169,17 +180,25 @@ class _FleetScreenState extends State<FleetScreen> {
             
             // Get current log or create new one
             final currentLog = AppSignals.currentDayLog.value;
+            final updatedPhotos = [
+              ...(currentLog?.damagePhotos ?? []),
+              ...urls,
+            ];
+            
             final newLog = DayLog(
               date: today,
               carPrefix: AppSignals.currentCarPrefix.value,
               punches: currentLog?.punches ?? [],
-              damagePhotos: urls,
+              damagePhotos: updatedPhotos,
             );
 
             await db.saveDayLog(newLog);
             AppSignals.currentDayLog.value = newLog;
 
             if (mounted) {
+              setState(() {
+                _damagePhotos.clear();
+              });
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Vistoria e fotos salvas com sucesso!')),
               );

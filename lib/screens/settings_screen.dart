@@ -120,7 +120,28 @@ class SettingsScreen extends StatelessWidget {
           onTap: () => _selectTime(context, type, settings),
           leading: Icon(_getIconForType(type), color: AppTheme.primaryColor),
           title: Text(type.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('Toque para ajustar: ${settings.time}'),
+          subtitle: Row(
+            children: [
+              Text('Horário: ', style: TextStyle(color: Colors.grey.shade500)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  settings.time,
+                  style: const TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'RobotoMono',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(LucideIcons.edit2, size: 14, color: Colors.grey.shade400),
+            ],
+          ),
           trailing: Switch(
             value: settings.enabled,
             onChanged: (val) => _toggleAlarm(type, settings, val),

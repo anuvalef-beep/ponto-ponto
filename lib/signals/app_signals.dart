@@ -12,7 +12,7 @@ class AppSignals {
   static final currentDayLog = signal<DayLog?>(null);
   static final currentCarPrefix = signal<String>('FROTA-01');
   static final selectedMonth = signal<DateTime>(DateTime.now());
-  static final settings = signal<AppSettings>(AppSettings(alarms: {}));
+  static final settings = signal<AppSettings>(AppSettings.defaultSettings());
   
   // Loading State
   static final isLoading = signal<bool>(false);

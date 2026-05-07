@@ -57,6 +57,14 @@ class DatabaseService {
     return null;
   }
 
+  Future<void> deleteDayLog(String date) async {
+    try {
+      await _logsRef.doc(date).delete();
+    } catch (e) {
+      AppSignals.message.value = 'Erro ao excluir registro: $e';
+    }
+  }
+
   // Fetch a specific day log
   Future<DayLog?> getDayLog(String date) async {
     final doc = await _logsRef.doc(date).get();

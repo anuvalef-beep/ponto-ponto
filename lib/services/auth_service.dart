@@ -36,6 +36,8 @@ class AuthService {
         final settings = await db.getSettings();
         if (settings != null) {
           AppSignals.settings.value = settings;
+        } else {
+          AppSignals.settings.value = AppSettings.defaultSettings();
         }
       } catch (e) {
         debugPrint('AuthService: Erro ao carregar settings: $e');
@@ -91,7 +93,7 @@ class AuthService {
       
       // Limpa os estados locais para não sobrar rastro da conta anterior
       AppSignals.user.value = null;
-      AppSignals.settings.value = AppSettings(alarms: {});
+      AppSignals.settings.value = AppSettings.defaultSettings();
       AppSignals.currentDayLog.value = null;
       
       debugPrint('AuthService: Logout concluído com sucesso.');

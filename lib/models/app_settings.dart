@@ -21,9 +21,16 @@ class AppSettings {
   final bool notificationsEnabled;
 
   AppSettings({
-    required this.alarms,
+    Map<String, AlarmSettings>? alarms,
     this.notificationsEnabled = true,
-  });
+  }) : alarms = alarms ?? {
+          'entrada': AlarmSettings(time: '08:00'),
+          'pausa': AlarmSettings(time: '12:00'),
+          'retorno': AlarmSettings(time: '13:00'),
+          'fim': AlarmSettings(time: '17:00'),
+        };
+
+  static AppSettings defaultSettings() => AppSettings();
 
   Map<String, dynamic> toMap() {
     return {
@@ -35,8 +42,9 @@ class AppSettings {
   factory AppSettings.fromMap(Map<String, dynamic> map) {
     final alarmsMap = (map['alarms'] as Map<String, dynamic>?)?.map(
           (key, value) => MapEntry(key, AlarmSettings.fromMap(value)),
-        ) ?? {};
-    
+        ) ??
+        {};
+
     // Ensure default keys exist
     final defaultKeys = ['entrada', 'pausa', 'retorno', 'fim'];
     for (final key in defaultKeys) {
@@ -51,11 +59,16 @@ class AppSettings {
 
   static String _getDefaultTime(String key) {
     switch (key) {
-      case 'entrada': return '08:00';
-      case 'pausa': return '12:00';
-      case 'retorno': return '13:00';
-      case 'fim': return '17:00';
-      default: return '00:00';
+      case 'entrada':
+        return '08:00';
+      case 'pausa':
+        return '12:00';
+      case 'retorno':
+        return '13:00';
+      case 'fim':
+        return '17:00';
+      default:
+        return '00:00';
     }
   }
 }

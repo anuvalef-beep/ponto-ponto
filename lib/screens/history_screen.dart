@@ -13,30 +13,85 @@ import 'package:url_launcher/url_launcher.dart';
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
-  Future<void> _shareToWhatsApp(DayLog log) async {
-    final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(log.date));
-    final stats = PontoUtils.calculateWorkedHours(log);
-    
-    String message = "*Relatório de Ponto - $date*\n";
-    message += "🚗 Veículo: ${log.carPrefix}\n\n";
-    
-    for (var p in log.punches) {
-      final time = DateFormat('HH:mm').format(p.timestamp);
-      message += "📍 ${p.type.name.toUpperCase()}: $time\n";
-    }
-    
-    if (stats != null) {
-      message += "\n⏱️ Total Trabalhado: ${stats['total']}";
-      if (stats['extra'] != null) {
-        message += "\n⭐ Horas Extra: ${stats['extra']}";
+  Future<void> _shareToWhatsApp(BuildContext context, DayLog log) async {
+    try {
+      final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(log.date));
+      final stats = PontoUtils.calculateWorkedHours(log);
+      
+      String message = "*Relatório de Ponto - $date*\n";
+      message += "🚗 Veículo: ${log.carPrefix}\n\n";
+      
+      for (var p in log.punches) {
+        final time = DateFormat('HH:mm').format(p.timestamp);
+        message += "📍 ${p.type.name.toUpperCase()}: $time\n";
+      }
+      
+      if (stats != null) {
+        message += "\n⏱️ Total Trabalhado: ${stats['total']}";
+        if (stats['extra'] != null) {
+          message += "\n⭐ Horas Extra: ${stats['extra']}";
+        }
+      }
+      
+      final encodedMessage = Uri.encodeComponent(message);
+      // Try WhatsApp direct first, then wa.me
+      final whatsappUrl = Uri.parse("whatsapp://send?text=$encodedMessage");
+      final webUrl = Uri.parse("https://wa.me/?text=$encodedMessage");
+      
+      if (await canLaunchUrl(whatsappUrl)) {
+        await launchUrl(whatsappUrl);
+      } else if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      } else {
+        throw 'Não foi possível abrir o WhatsApp';
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao compartilhar: $e'), backgroundColor: Colors.red),
+        );
       }
     }
-    
-    final encodedMessage = Uri.encodeComponent(message);
-    final url = Uri.parse("https://wa.me/?text=$encodedMessage");
-    
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _confirmDelete(BuildContext context, DayLog log) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey.shade900,
+        title: const Text('Excluir Registro?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Text(
+          'Deseja realmente excluir o registro do dia ${DateFormat('dd/MM/yyyy').format(DateTime.parse(log.date))}?\n\nEssa ação não pode ser desfeita.',
+          style: const TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('EXCLUIR', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && AppSignals.user.value != null) {
+      final db = DatabaseService(uid: AppSignals.user.value!.uid);
+      await db.deleteDayLog(log.date);
+
+      // Se for o log de hoje, limpa o sinal atual para resetar os botões de ponto
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      if (log.date == today) {
+        AppSignals.currentDayLog.value = null;
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registro excluído com sucesso!')),
+        );
+      }
     }
   }
 
@@ -111,9 +166,18 @@ class HistoryScreen extends StatelessWidget {
                       subtitle: stats != null 
                         ? Text('Total: ${stats['total']} | Extra: ${stats['extra'] ?? '00:00'}')
                         : const Text('Incompleto'),
-                      trailing: IconButton(
-                        icon: const Icon(LucideIcons.share2, color: Colors.green),
-                        onPressed: () => _shareToWhatsApp(log),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(LucideIcons.share2, color: Colors.green),
+                            onPressed: () => _shareToWhatsApp(context, log),
+                          ),
+                          IconButton(
+                            icon: const Icon(LucideIcons.trash2, color: Colors.redAccent),
+                            onPressed: () => _confirmDelete(context, log),
+                          ),
+                        ],
                       ),
                       children: [
                         Padding(
