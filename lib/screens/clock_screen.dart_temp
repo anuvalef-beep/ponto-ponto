@@ -1,0 +1,139 @@
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('EEEE, d MMMM', 'pt_BR').format(_now),
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                      ),
+                      Text(
+                        'Bom dia, ${AppSignals.user.value?.displayName?.split(' ').first ?? 'Motorista'}!',
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: AppSignals.user.value?.photoURL != null ? NetworkImage(AppSignals.user.value!.photoURL!) : null,
+                    child: AppSignals.user.value?.photoURL == null ? const Icon(LucideIcons.user, color: Colors.white) : null,
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+
+              if (_hasPendingPermissions)
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PermissionsScreen()),
+                    );
+                    _checkPermissions();
+                  },
+                  child: GlassContainer(
+                    color: Colors.amber.withOpacity(0.1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.alertTriangle, color: Colors.amber),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Configuração Pendente',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  'Clique para ativar os alarmes corretamente.',
+                                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(LucideIcons.chevronRight, color: Colors.grey, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ).animate().shake(),
+
+              const Spacer(),
+              
+              // Digital Clock
+              Text(
+                DateFormat('HH:mm:ss').format(_now),
+                style: const TextStyle(
+                  fontSize: 80,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -4,
+                  fontFamily: 'RobotoMono',
+                ),
+              ),
+              
+              const Spacer(),
+              
+              // Punch Buttons Grid
+              Watch((context) {
+                final log = AppSignals.currentDayLog.value;
+                final punches = log?.punches ?? [];
+                
+                return GridView.count(
+                  shrinkWrap: true,
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  children: [
+                    _buildPunchButton(
+                      'ENTRADA', 
+                      PunchType.entrada, 
+                      LucideIcons.play, 
+                      AppTheme.primaryColor,
+                      punches.any((p) => p.type == PunchType.entrada),
+                    ),
+                    _buildPunchButton(
+                      'PAUSA', 
+                      PunchType.pausa, 
+                      LucideIcons.pause, 
+                      Colors.orangeAccent,
+                      punches.any((p) => p.type == PunchType.pausa),
+                    ),
+                    _buildPunchButton(
+                      'RETORNO', 
+                      PunchType.retorno, 
+                      LucideIcons.rotateCcw, 
+                      Colors.blueAccent,
+                      punches.any((p) => p.type == PunchType.retorno),
+                    ),
+                    _buildPunchButton(
+                      'FIM', 
+                      PunchType.fim, 
+                      LucideIcons.square, 
+                      Colors.redAccent,
+                      punches.any((p) => p.type == PunchType.fim),
+                    ),
+                  ],
+                );
+              }),
+              
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }

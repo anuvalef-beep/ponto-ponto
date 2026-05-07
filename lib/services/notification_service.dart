@@ -36,7 +36,7 @@ class NotificationService {
     for (var entry in settings.alarms.entries) {
       if (entry.value.enabled) {
         await scheduleAlarm(
-          id: entry.key.hashCode,
+          id: entry.key.hashCode.abs(), // Garantir ID positivo
           title: 'Lembrete de Ponto',
           body: 'Está na hora da sua batida de ${entry.key}!',
           time: entry.value.time,
@@ -62,22 +62,26 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
+    // Usar tz.local mas garantir que o cálculo de offset seja respeitado
+    final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
+
     await _notifications.zonedSchedule(
-      id,
+      id.abs(), // Garantir ID positivo
       title,
       body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
+      tzScheduledDate,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'ponto_alarms_v4', // Versão 4 para forçar novas configurações de canal
-          'Alarmes de Ponto',
-          channelDescription: 'Alarmes críticos para registro de ponto',
+          'ponto_alarms_v5', // Versão 5 para forçar novas configurações
+          'Alarmes de Ponto Críticos',
+          channelDescription: 'Alarmes que tocam mesmo em modo não perturbe',
           importance: Importance.max,
           priority: Priority.max,
           fullScreenIntent: true,
           category: AndroidNotificationCategory.alarm,
           audioAttributesUsage: AudioAttributesUsage.alarm,
           playSound: true,
+          enableVibration: true,
           visibility: NotificationVisibility.public,
           ongoing: true,
           autoCancel: false,

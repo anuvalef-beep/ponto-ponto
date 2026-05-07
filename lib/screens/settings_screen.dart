@@ -191,13 +191,13 @@ class SettingsScreen extends StatelessWidget {
     // Schedule/Cancel Notification
     if (newAlarm.enabled) {
       NotificationService.scheduleAlarm(
-        id: type.hashCode,
+        id: type.hashCode.abs(),
         title: 'Lembrete de Ponto',
         body: 'Está na hora da sua batida de $type!',
         time: newAlarm.time,
       );
     } else {
-      NotificationService.cancelAlarm(type.hashCode);
+      NotificationService.cancelAlarm(type.hashCode.abs());
     }
   }
 

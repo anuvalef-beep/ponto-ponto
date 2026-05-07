@@ -9,6 +9,8 @@ import '../signals/app_signals.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import '../services/database_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'permissions_screen.dart';
 
 class ClockScreen extends StatefulWidget {
   const ClockScreen({super.key});
@@ -20,16 +22,32 @@ class ClockScreen extends StatefulWidget {
 class _ClockScreenState extends State<ClockScreen> {
   late Timer _timer;
   DateTime _now = DateTime.now();
+  bool _hasPendingPermissions = false;
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _now = DateTime.now();
-      });
+      if (mounted) {
+        setState(() {
+          _now = DateTime.now();
+        });
+      }
     });
     _loadTodayLog();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    final status = await Permission.notification.status;
+    final alarmStatus = await Permission.scheduleExactAlarm.status;
+    final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+    
+    if (mounted) {
+      setState(() {
+        _hasPendingPermissions = !status.isGranted || !alarmStatus.isGranted || !batteryStatus.isGranted;
+      });
+    }
   }
 
   @override
@@ -145,14 +163,55 @@ class _ClockScreenState extends State<ClockScreen> {
                       ),
                     ],
                   ),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppTheme.primaryColor,
-                    child: Icon(LucideIcons.user, color: Colors.white),
+                    backgroundImage: AppSignals.user.value?.photoURL != null ? NetworkImage(AppSignals.user.value!.photoURL!) : null,
+                    child: AppSignals.user.value?.photoURL == null ? const Icon(LucideIcons.user, color: Colors.white) : null,
                   ),
                 ],
               ),
               
+              const SizedBox(height: 16),
+
+              if (_hasPendingPermissions)
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PermissionsScreen()),
+                    );
+                    _checkPermissions();
+                  },
+                  child: GlassContainer(
+                    color: Colors.amber.withOpacity(0.1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.alertTriangle, color: Colors.amber),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Configuração Pendente',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  'Clique para ativar os alarmes corretamente.',
+                                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(LucideIcons.chevronRight, color: Colors.grey, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ).animate().shake(),
+
               const Spacer(),
               
               // Digital Clock
@@ -162,7 +221,7 @@ class _ClockScreenState extends State<ClockScreen> {
                   fontSize: 80,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -4,
-                  fontFamily: 'RobotoMono', // Digital feel
+                  fontFamily: 'RobotoMono',
                 ),
               ),
               
@@ -190,14 +249,14 @@ class _ClockScreenState extends State<ClockScreen> {
                       'PAUSA', 
                       PunchType.pausa, 
                       LucideIcons.pause, 
-                      Colors.orange,
+                      Colors.orangeAccent,
                       punches.any((p) => p.type == PunchType.pausa),
                     ),
                     _buildPunchButton(
                       'RETORNO', 
                       PunchType.retorno, 
                       LucideIcons.rotateCcw, 
-                      Colors.cyan,
+                      Colors.blueAccent,
                       punches.any((p) => p.type == PunchType.retorno),
                     ),
                     _buildPunchButton(
@@ -211,7 +270,7 @@ class _ClockScreenState extends State<ClockScreen> {
                 );
               }),
               
-              const SizedBox(height: 32),
+              const Spacer(),
             ],
           ),
         ),
