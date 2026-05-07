@@ -36,8 +36,11 @@ class AuthService {
         final settings = await db.getSettings();
         if (settings != null) {
           AppSignals.settings.value = settings;
+          await NotificationService.rescheduleAllAlarms(settings);
         } else {
-          AppSignals.settings.value = AppSettings.defaultSettings();
+          final defSettings = AppSettings.defaultSettings();
+          AppSignals.settings.value = defSettings;
+          await NotificationService.rescheduleAllAlarms(defSettings);
         }
       } catch (e) {
         debugPrint('AuthService: Erro ao carregar settings: $e');
