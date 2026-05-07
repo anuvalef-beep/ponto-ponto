@@ -180,7 +180,7 @@ class _FleetScreenState extends State<FleetScreen> {
             
             // Get current log or create new one
             final currentLog = AppSignals.currentDayLog.value;
-            final updatedPhotos = [
+            final updatedPhotos = <String>[
               ...(currentLog?.damagePhotos ?? []),
               ...urls,
             ];
