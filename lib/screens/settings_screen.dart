@@ -194,7 +194,7 @@ class SettingsScreen extends StatelessWidget {
         id: type.hashCode.abs(),
         title: 'Lembrete de Ponto',
         body: 'Está na hora da sua batida de $type!',
-        time: newAlarm.time,
+        timeStr: newAlarm.time,
       );
     } else {
       NotificationService.cancelAlarm(type.hashCode.abs());

@@ -3,7 +3,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import '../models/app_settings.dart';
+import '../models/app_settings.dart' as models;
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
@@ -43,7 +43,7 @@ class NotificationService {
       scheduledDate,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'ponto_alarms_v6', // Nova versão do canal
+          'ponto_alarms_v6',
           'Alarmes de Ponto',
           channelDescription: 'Canal para lembretes de batida de ponto',
           importance: Importance.max,
@@ -52,9 +52,6 @@ class NotificationService {
           category: AndroidNotificationCategory.alarm,
           audioAttributesUsage: AudioAttributesUsage.alarm,
           playSound: true,
-          // Usar som de alarme padrão do sistema
-          sound: const RawResourceAndroidNotificationSound('notification'), 
-          // Nota: 'notification' é um placeholder, o Android usará o default se configurado no canal
           enableVibration: true,
           vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
           additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
@@ -69,16 +66,22 @@ class NotificationService {
     required int id,
     required String title,
     required String body,
-    required TimeOfDay time,
+    required String timeStr, // Recebe string HH:mm
   }) async {
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return;
+    
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
     final now = tz.TZDateTime.now(tz.local);
     var scheduledDate = tz.TZDateTime(
       tz.local,
       now.year,
       now.month,
       now.day,
-      time.hour,
-      time.minute,
+      hour,
+      minute,
     );
 
     if (scheduledDate.isBefore(now)) {
@@ -117,40 +120,18 @@ class NotificationService {
     await _notifications.cancel(id.abs());
   }
 
-  static Future<void> rescheduleAllAlarms(AppSettings settings) async {
+  static Future<void> rescheduleAllAlarms(models.AppSettings settings) async {
     await _notifications.cancelAll();
     
-    if (settings.entradaAlarm.enabled) {
-      await scheduleAlarm(
-        id: 'entrada'.hashCode.abs(),
-        title: 'Lembrete de Ponto',
-        body: 'Está na hora da sua batida de ENTRADA!',
-        time: settings.entradaAlarm.time,
-      );
-    }
-    if (settings.pausaAlarm.enabled) {
-      await scheduleAlarm(
-        id: 'pausa'.hashCode.abs(),
-        title: 'Lembrete de Ponto',
-        body: 'Está na hora da sua batida de PAUSA!',
-        time: settings.pausaAlarm.time,
-      );
-    }
-    if (settings.retornoAlarm.enabled) {
-      await scheduleAlarm(
-        id: 'retorno'.hashCode.abs(),
-        title: 'Lembrete de Ponto',
-        body: 'Está na hora da sua batida de RETORNO!',
-        time: settings.retornoAlarm.time,
-      );
-    }
-    if (settings.fimAlarm.enabled) {
-      await scheduleAlarm(
-        id: 'fim'.hashCode.abs(),
-        title: 'Lembrete de Ponto',
-        body: 'Está na hora da sua batida de FIM!',
-        time: settings.fimAlarm.time,
-      );
-    }
+    settings.alarms.forEach((type, alarm) async {
+      if (alarm.enabled) {
+        await scheduleAlarm(
+          id: type.hashCode.abs(),
+          title: 'Lembrete de Ponto',
+          body: 'Está na hora da sua batida de ${type.toUpperCase()}!',
+          timeStr: alarm.time,
+        );
+      }
+    });
   }
 }
