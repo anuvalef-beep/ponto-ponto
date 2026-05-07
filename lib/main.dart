@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
         
         debugPrint('MyApp: Rebuilding Home (isLoading: $isLoading, user: ${user?.uid}, isAuthenticated: $isAuthenticated)');
 
-        if (isLoading) {
+        if (isLoading && !isAuthenticated) {
           return const Scaffold(
             body: Center(
               child: Column(

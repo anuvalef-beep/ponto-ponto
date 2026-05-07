@@ -38,12 +38,14 @@ class DayLog {
   final String date; // YYYY-MM-DD
   final String carPrefix;
   final List<Punch> punches;
+  final List<String> damagePhotos; // URLs ou caminhos das fotos
   final bool isDayOff;
 
   DayLog({
     required this.date,
     required this.carPrefix,
     required this.punches,
+    this.damagePhotos = const [],
     this.isDayOff = false,
   });
 
@@ -52,6 +54,7 @@ class DayLog {
       'date': date,
       'carPrefix': carPrefix,
       'punches': punches.map((p) => p.toMap()).toList(),
+      'damagePhotos': damagePhotos,
       'isDayOff': isDayOff,
     };
   }
@@ -61,6 +64,7 @@ class DayLog {
       date: map['date'],
       carPrefix: map['carPrefix'],
       punches: (map['punches'] as List).map((p) => Punch.fromMap(p)).toList(),
+      damagePhotos: List<String>.from(map['damagePhotos'] ?? []),
       isDayOff: map['isDayOff'] ?? false,
     );
   }

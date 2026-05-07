@@ -56,7 +56,7 @@ class _ClockScreenState extends State<ClockScreen> {
       id: Uuid().v4(),
       type: type,
       timestamp: DateTime.now(),
-      carPrefix: 'FROTA-01', // TODO: Get from settings
+      carPrefix: AppSignals.currentCarPrefix.value,
     );
 
     final currentLog = AppSignals.currentDayLog.value;
@@ -66,7 +66,7 @@ class _ClockScreenState extends State<ClockScreen> {
     
     final newLog = DayLog(
       date: today,
-      carPrefix: 'FROTA-01',
+      carPrefix: AppSignals.currentCarPrefix.value,
       punches: updatedPunches,
     );
 
@@ -79,6 +79,45 @@ class _ClockScreenState extends State<ClockScreen> {
         backgroundColor: AppTheme.accentColor,
       ),
     );
+  }
+
+  Future<void> _editPunch(PunchType type) async {
+    final log = AppSignals.currentDayLog.value;
+    if (log == null || AppSignals.user.value == null) return;
+    
+    final punch = log.punches.firstWhere((p) => p.type == type);
+    final initialTime = TimeOfDay.fromDateTime(punch.timestamp);
+    
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      helpText: 'Corrigir horário de ${type.name.toUpperCase()}',
+    );
+    
+    if (picked != null) {
+      final now = DateTime.now();
+      final newTimestamp = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
+      
+      final updatedPunches = log.punches.map((p) {
+        return p.type == type 
+          ? Punch(id: p.id, type: p.type, timestamp: newTimestamp, carPrefix: p.carPrefix)
+          : p;
+      }).toList();
+      
+      final newLog = DayLog(
+        date: log.date,
+        carPrefix: log.carPrefix,
+        punches: updatedPunches,
+      );
+
+      final db = DatabaseService(uid: AppSignals.user.value!.uid);
+      await db.saveDayLog(newLog);
+      AppSignals.currentDayLog.value = newLog;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Horário corrigido com sucesso!')),
+      );
+    }
   }
 
   @override
@@ -182,7 +221,13 @@ class _ClockScreenState extends State<ClockScreen> {
 
   Widget _buildPunchButton(String label, PunchType type, IconData icon, Color color, bool isDone) {
     return GestureDetector(
-      onTap: isDone ? null : () => _handlePunch(type),
+      onTap: () {
+        if (isDone) {
+          _editPunch(type);
+        } else {
+          _handlePunch(type);
+        }
+      },
       child: GlassContainer(
         color: isDone ? color.withOpacity(0.1) : color.withOpacity(0.1),
         border: Border.all(

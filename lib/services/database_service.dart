@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import '../models/ponto_models.dart';
 import '../models/app_settings.dart';
 import '../signals/app_signals.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final String uid;
 
   DatabaseService({required this.uid});
@@ -61,6 +64,23 @@ class DatabaseService {
       return DayLog.fromMap(doc.data() as Map<String, dynamic>);
     }
     return null;
+  }
+
+  // Upload photos to Storage and return URLs
+  Future<List<String>> uploadImages(List<File> files, String folder) async {
+    List<String> urls = [];
+    for (var file in files) {
+      try {
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+        final ref = _storage.ref().child('users/$uid/$folder/$fileName');
+        await ref.putFile(file);
+        final url = await ref.getDownloadURL();
+        urls.add(url);
+      } catch (e) {
+        print('Erro no upload: $e');
+      }
+    }
+    return urls;
   }
 
   String _formatDate(DateTime date) {

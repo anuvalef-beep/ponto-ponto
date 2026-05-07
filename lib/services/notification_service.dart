@@ -42,9 +42,9 @@ class NotificationService {
       tz.TZDateTime.from(scheduledDate, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'ponto_alarms',
-          'Alarmes de Ponto',
-          channelDescription: 'Notificações para lembretes de batida de ponto',
+          'ponto_alarms_v2', // Novo canal para garantir atualização das configurações
+          'Lembretes de Ponto',
+          channelDescription: 'Alarmes urgentes para batida de ponto',
           importance: Importance.max,
           priority: Priority.max,
           fullScreenIntent: true,

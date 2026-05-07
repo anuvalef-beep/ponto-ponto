@@ -4,6 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
+import '../signals/app_signals.dart';
+import '../services/database_service.dart';
+import '../models/ponto_models.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:intl/intl.dart';
 
 class FleetScreen extends StatefulWidget {
   const FleetScreen({super.key});
@@ -15,9 +20,24 @@ class FleetScreen extends StatefulWidget {
 class _FleetScreenState extends State<FleetScreen> {
   final List<XFile> _damagePhotos = [];
   final ImagePicker _picker = ImagePicker();
+  late TextEditingController _prefixController;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefixController = TextEditingController(text: AppSignals.currentCarPrefix.value);
+  }
+
+  @override
+  void dispose() {
+    _prefixController.dispose();
+    super.dispose();
+  }
+
+  bool _isUploading = false;
 
   Future<void> _takePhoto() async {
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50);
     if (photo != null) {
       setState(() {
         _damagePhotos.add(photo);
@@ -52,19 +72,24 @@ class _FleetScreenState extends State<FleetScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('FROTA-01', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Placa: ABC-1234', style: TextStyle(color: Colors.grey.shade500)),
+                        SizedBox(
+                          width: 150,
+                          child: TextField(
+                            controller: _prefixController,
+                            decoration: const InputDecoration(
+                              labelText: 'Prefixo',
+                              isDense: true,
+                              border: InputBorder.none,
+                            ),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                            onChanged: (val) => AppSignals.currentCarPrefix.value = val,
+                          ),
+                        ),
+                        Text('Identifique o veículo atual', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                       ],
                     ),
                     const Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Funcionalidade de troca de frota em breve!')),
-                        );
-                      }, 
-                      child: const Text('Trocar')
-                    ),
+                    const Icon(LucideIcons.edit3, size: 16, color: Colors.grey),
                   ],
                 ),
               ),
@@ -129,19 +154,44 @@ class _FleetScreenState extends State<FleetScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (_damagePhotos.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Nenhuma avaria registrada. Vistoria concluída!')),
+        onPressed: _isUploading ? null : () async {
+          if (AppSignals.user.value == null) return;
+          
+          setState(() => _isUploading = true);
+          
+          try {
+            final db = DatabaseService(uid: AppSignals.user.value!.uid);
+            final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+            
+            // Upload images to Storage
+            final List<File> files = _damagePhotos.map((x) => File(x.path)).toList();
+            final urls = await db.uploadImages(files, 'damages/$today');
+            
+            // Get current log or create new one
+            final currentLog = AppSignals.currentDayLog.value;
+            final newLog = DayLog(
+              date: today,
+              carPrefix: AppSignals.currentCarPrefix.value,
+              punches: currentLog?.punches ?? [],
+              damagePhotos: urls,
             );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Vistoria com ${_damagePhotos.length} fotos salva com sucesso!')),
-            );
+
+            await db.saveDayLog(newLog);
+            AppSignals.currentDayLog.value = newLog;
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Vistoria e fotos salvas com sucesso!')),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _isUploading = false);
           }
         },
-        label: const Text('Finalizar Vistoria'),
-        icon: const Icon(LucideIcons.save),
+        label: Text(_isUploading ? 'Enviando...' : 'Finalizar Vistoria'),
+        icon: _isUploading 
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+          : const Icon(LucideIcons.save),
         backgroundColor: AppTheme.accentColor,
       ),
     );
