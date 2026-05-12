@@ -87,6 +87,7 @@ class _ClockScreenState extends State<ClockScreen> {
       date: today,
       carPrefix: AppSignals.currentCarPrefix.value,
       punches: updatedPunches,
+      damagePhotos: currentLog?.damagePhotos ?? [],
     );
 
     await db.saveDayLog(newLog);
@@ -127,6 +128,7 @@ class _ClockScreenState extends State<ClockScreen> {
         date: log.date,
         carPrefix: log.carPrefix,
         punches: updatedPunches,
+        damagePhotos: log.damagePhotos,
       );
 
       final db = DatabaseService(uid: AppSignals.user.value!.uid);

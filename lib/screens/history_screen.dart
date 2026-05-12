@@ -33,6 +33,13 @@ class HistoryScreen extends StatelessWidget {
         }
       }
       
+      if (log.damagePhotos.isNotEmpty) {
+        message += "\n\n📸 Fotos de Avarias:\n";
+        for (var i = 0; i < log.damagePhotos.length; i++) {
+          message += "${i + 1}. ${log.damagePhotos[i]}\n";
+        }
+      }
+      
       final encodedMessage = Uri.encodeComponent(message);
       // Try WhatsApp direct first, then wa.me
       final whatsappUrl = Uri.parse("whatsapp://send?text=$encodedMessage");

@@ -136,28 +136,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      NotificationService.testAlarm();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Alarme de teste agendado para daqui a 10 segundos!')),
-                      );
-                    },
-                    icon: const Icon(LucideIcons.playCircle),
-                    label: const Text('TESTAR ALARME (10 SEG)'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.amber,
-                      side: const BorderSide(color: Colors.amber),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 900.ms),
-                
-                const SizedBox(height: 20),
+
                 SizedBox(
                   width: double.infinity,
                   height: 56,

@@ -114,21 +114,26 @@ class _FleetScreenState extends State<FleetScreen> {
             ),
             const SizedBox(height: 16),
             
-            if (_damagePhotos.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40.0),
-                  child: Column(
-                    children: [
-                      Icon(LucideIcons.cameraOff, size: 48, color: Colors.grey.shade700),
-                      const SizedBox(height: 16),
-                      Text('Nenhuma avaria registrada.', style: TextStyle(color: Colors.grey.shade600)),
-                    ],
+            Watch((context) {
+              final networkPhotos = AppSignals.currentDayLog.value?.damagePhotos ?? [];
+              final totalPhotos = networkPhotos.length + _damagePhotos.length;
+              
+              if (totalPhotos == 0) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0),
+                    child: Column(
+                      children: [
+                        Icon(LucideIcons.cameraOff, size: 48, color: Colors.grey.shade700),
+                        const SizedBox(height: 16),
+                        Text('Nenhuma avaria registrada.', style: TextStyle(color: Colors.grey.shade600)),
+                      ],
+                    ),
                   ),
-                ),
-              )
-            else
-              GridView.builder(
+                );
+              }
+
+              return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -136,14 +141,67 @@ class _FleetScreenState extends State<FleetScreen> {
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                 ),
-                itemCount: _damagePhotos.length,
+                itemCount: totalPhotos,
                 itemBuilder: (context, index) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(File(_damagePhotos[index].path), fit: BoxFit.cover),
+                  final isNetwork = index < networkPhotos.length;
+                  
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: isNetwork
+                            ? Image.network(
+                                networkPhotos[index],
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(color: Colors.grey.shade800, child: const Center(child: CircularProgressIndicator()));
+                                },
+                              )
+                            : Image.file(File(_damagePhotos[index - networkPhotos.length].path), fit: BoxFit.cover),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () async {
+                            if (isNetwork) {
+                              final log = AppSignals.currentDayLog.value;
+                              if (log != null && AppSignals.user.value != null) {
+                                final updatedPhotos = log.damagePhotos.where((p) => p != networkPhotos[index]).toList();
+                                final newLog = DayLog(
+                                  date: log.date,
+                                  carPrefix: log.carPrefix,
+                                  punches: log.punches,
+                                  damagePhotos: updatedPhotos,
+                                  isDayOff: log.isDayOff,
+                                );
+                                AppSignals.currentDayLog.value = newLog;
+                                final db = DatabaseService(uid: AppSignals.user.value!.uid);
+                                await db.saveDayLog(newLog);
+                              }
+                            } else {
+                              setState(() {
+                                _damagePhotos.removeAt(index - networkPhotos.length);
+                              });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(LucideIcons.x, size: 16, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
-              ),
+              );
+            }),
             
             const SizedBox(height: 24),
             
