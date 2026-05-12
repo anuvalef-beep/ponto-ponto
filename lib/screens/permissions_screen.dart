@@ -17,6 +17,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   bool _notificationsGranted = false;
   bool _exactAlarmsGranted = false;
   bool _batteryOptimized = true;
+  bool _systemAlertGranted = false;
 
   @override
   void initState() {
@@ -28,12 +29,14 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     final notifStatus = await Permission.notification.status;
     final alarmStatus = await Permission.scheduleExactAlarm.status;
     final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+    final systemAlertStatus = await Permission.systemAlertWindow.status;
 
     if (mounted) {
       setState(() {
         _notificationsGranted = notifStatus.isGranted;
         _exactAlarmsGranted = alarmStatus.isGranted;
         _batteryOptimized = !batteryStatus.isGranted;
+        _systemAlertGranted = systemAlertStatus.isGranted;
       });
     }
   }
@@ -115,6 +118,17 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                         isGranted: !_batteryOptimized,
                         onTap: () async {
                           await Permission.ignoreBatteryOptimizations.request();
+                          _checkPermissions();
+                        },
+                      ),
+                      _buildPermissionStep(
+                        index: 4,
+                        icon: LucideIcons.appWindow,
+                        title: 'Sobrepor a Outros Apps',
+                        description: 'Permite que a tela do alarme abra sozinha mesmo usando outro app.',
+                        isGranted: _systemAlertGranted,
+                        onTap: () async {
+                          await Permission.systemAlertWindow.request();
                           _checkPermissions();
                         },
                       ),
