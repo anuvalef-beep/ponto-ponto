@@ -89,7 +89,7 @@ class NotificationService {
       assetAudioPath: 'assets/alarm.mp3',
       loopAudio: true,
       vibrate: true,
-      volumeSettings: VolumeSettings(volume: 0.8),
+      volumeSettings: VolumeSettings.fixed(volume: 0.8),
       notificationSettings: NotificationSettings(
         title: 'Teste de Alarme',
         body: 'O despertador real está funcionando!',
@@ -163,7 +163,7 @@ class NotificationService {
       assetAudioPath: 'assets/alarm.mp3',
       loopAudio: true,
       vibrate: true,
-      volumeSettings: VolumeSettings(
+      volumeSettings: VolumeSettings.fade(
         volume: 0.8,
         fadeDuration: Duration(seconds: 3),
       ),
