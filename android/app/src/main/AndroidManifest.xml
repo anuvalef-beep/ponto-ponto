@@ -15,7 +15,7 @@
     <application
         android:label="ponto_ponto"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
 
         <!-- ScheduledNotificationBootReceiver for rescheduling after reboot -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" android:exported="false">
