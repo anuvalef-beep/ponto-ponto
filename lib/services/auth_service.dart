@@ -73,15 +73,13 @@ class AuthService {
       // Update state immediately to prevent routing issues
       await _handleUserChange(userCredential.user);
       
-      // Desliga o carregamento por último
-      AppSignals.isLoading.value = false;
-      
       return userCredential;
     } catch (e) {
       debugPrint('AuthService: Erro no Google Sign In: $e');
-      AppSignals.isLoading.value = false;
       AppSignals.message.value = 'Erro ao entrar com Google: $e';
       return null;
+    } finally {
+      AppSignals.isLoading.value = false;
     }
   }
 

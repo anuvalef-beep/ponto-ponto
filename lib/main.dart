@@ -111,13 +111,23 @@ class _MyAppState extends State<MyApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      home: Watch((context) {
-        final isAuthenticated = AppSignals.isAuthenticated.watch(context);
-        
-        debugPrint('MyApp: Rebuilding Home (isAuthenticated: $isAuthenticated)');
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              ),
+            );
+          }
+          
+          final user = snapshot.data;
+          debugPrint('MyApp: Rebuilding Home (user: ${user?.uid})');
 
-        return isAuthenticated ? const MainScreen() : const LoginScreen();
-      }),
+          return user != null ? const MainScreen() : const LoginScreen();
+        },
+      ),
     );
   }
 }
