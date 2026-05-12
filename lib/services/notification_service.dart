@@ -57,31 +57,7 @@ class NotificationService {
     final now = tz.TZDateTime.now(tz.local);
     final scheduledDate = now.add(const Duration(seconds: 10));
 
-    await _notifications.zonedSchedule(
-      999,
-      'Teste de Alarme Nativo',
-      'Este alarme usa o som padrão do seu Android.',
-      scheduledDate,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'ponto_alarms_v7',
-          'Alarmes de Ponto',
-          channelDescription: 'Canal para lembretes de batida de ponto',
-          importance: Importance.max,
-          priority: Priority.max,
-          fullScreenIntent: true,
-          category: AndroidNotificationCategory.alarm,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          playSound: true,
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
-          additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      payload: 'test',
-    );
+
 
     final alarmSettings = AlarmSettings(
       id: 999,
@@ -127,33 +103,7 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    await _notifications.zonedSchedule(
-      id.abs(),
-      title,
-      body,
-      scheduledDate,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'ponto_alarms_v7',
-          'Alarmes de Ponto',
-          channelDescription: 'Lembretes insistentes de ponto',
-          importance: Importance.max,
-          priority: Priority.max,
-          fullScreenIntent: true,
-          category: AndroidNotificationCategory.alarm,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          playSound: true,
-          enableVibration: true,
-          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
-          additionalFlags: Int32List.fromList([4]), // FLAG_INSISTENT
-          visibility: NotificationVisibility.public,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'alarm_$type',
-    );
+
 
     // REAL ALARM MIGRATION:
     // We also schedule a real alarm that plays sound until stopped.

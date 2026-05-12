@@ -73,6 +73,16 @@ class _MyAppState extends State<MyApp> {
     Alarm.ringStream.stream.listen((alarmSettings) {
       _handleAlarmRing(alarmSettings);
     });
+
+    // Check for alarms that are already ringing
+    Alarm.getAlarms().then((alarms) async {
+      for (var alarm in alarms) {
+        if (await Alarm.isRinging(alarm.id)) {
+          _handleAlarmRing(alarm);
+          break;
+        }
+      }
+    });
   }
 
   void _handleAlarmRing(AlarmSettings alarmSettings) {
