@@ -57,6 +57,8 @@ dependencies:
   uuid: ^4.5.1
   permission_handler: ^11.3.1
   alarm: ^5.0.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

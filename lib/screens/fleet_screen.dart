@@ -35,8 +35,27 @@ class _FleetScreenState extends State<FleetScreen> {
     
     final db = DatabaseService(uid: AppSignals.user.value!.uid);
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final log = await db.getDayLog(today);
+    var log = await db.getDayLog(today);
+
+    if (log == null) {
+      final yesterday = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
+      final yesterdayLog = await db.getDayLog(yesterday);
+      if (yesterdayLog != null) {
+        final hasEntrada = yesterdayLog.punches.any((p) => p.type == PunchType.entrada);
+        final hasFim = yesterdayLog.punches.any((p) => p.type == PunchType.fim);
+        if (hasEntrada && !hasFim) {
+          log = yesterdayLog;
+        }
+      }
+    }
+
     AppSignals.currentDayLog.value = log;
+    if (log != null && log.carPrefix.isNotEmpty) {
+      AppSignals.currentCarPrefix.value = log.carPrefix;
+      if (mounted) {
+        _prefixController.text = log.carPrefix;
+      }
+    }
   }
 
   @override
@@ -238,13 +257,14 @@ class _FleetScreenState extends State<FleetScreen> {
             
             // Get current log or create new one
             final currentLog = AppSignals.currentDayLog.value;
+            final logDate = currentLog?.date ?? DateFormat('yyyy-MM-dd').format(DateTime.now());
             final updatedPhotos = <String>[
               ...(currentLog?.damagePhotos ?? []),
               ...urls,
             ];
             
             final newLog = DayLog(
-              date: today,
+              date: logDate,
               carPrefix: AppSignals.currentCarPrefix.value,
               punches: currentLog?.punches ?? [],
               damagePhotos: updatedPhotos,
