@@ -11,6 +11,7 @@ class AppSignals {
   // App Data
   static final currentDayLog = signal<DayLog?>(null);
   static final currentCarPrefix = signal<String>('FROTA-01');
+  static final incomingNotification = signal<String?>(null);
   static final selectedMonth = signal<DateTime>(DateTime.now());
   static final settings = signal<AppSettings>(AppSettings.defaultSettings());
   

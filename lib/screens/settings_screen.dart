@@ -192,6 +192,7 @@ class SettingsScreen extends StatelessWidget {
     if (newAlarm.enabled) {
       NotificationService.scheduleAlarm(
         id: type.hashCode.abs(),
+        type: type,
         title: 'Lembrete de Ponto',
         body: 'Está na hora da sua batida de $type!',
         timeStr: newAlarm.time,

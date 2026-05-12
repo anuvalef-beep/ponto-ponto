@@ -3,7 +3,9 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
+import 'package:alarm/alarm.dart';
 import '../models/app_settings.dart' as models;
+import '../signals/app_signals.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
@@ -21,7 +23,14 @@ class NotificationService {
       android: initializationSettingsAndroid,
     );
 
-    await _notifications.initialize(initializationSettings);
+    await _notifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload != null) {
+          AppSignals.incomingNotification.value = response.payload;
+        }
+      },
+    );
 
     final platform = _notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -29,6 +38,18 @@ class NotificationService {
     if (platform != null) {
       await platform.requestNotificationsPermission();
       await platform.requestExactAlarmsPermission();
+      
+      // Explicitly create the high importance channel
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'ponto_alarms_v7',
+        'Alarmes de Ponto',
+        description: 'Lembretes insistentes de batida de ponto',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+      await platform.createNotificationChannel(channel);
     }
   }
 
@@ -43,7 +64,7 @@ class NotificationService {
       scheduledDate,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'ponto_alarms_v6',
+          'ponto_alarms_v7',
           'Alarmes de Ponto',
           channelDescription: 'Canal para lembretes de batida de ponto',
           importance: Importance.max,
@@ -59,11 +80,27 @@ class NotificationService {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      payload: 'test',
     );
+
+    final alarmSettings = AlarmSettings(
+      id: 999,
+      dateTime: scheduledDate,
+      assetAudioPath: 'assets/alarm.mp3',
+      loopAudio: true,
+      vibrate: true,
+      volume: 0.8,
+      notificationTitle: 'Teste de Alarme',
+      notificationBody: 'O despertador real está funcionando!',
+      enableNotificationOnKill: true,
+    );
+    
+    await Alarm.set(alarmSettings: alarmSettings);
   }
 
   static Future<void> scheduleAlarm({
     required int id,
+    required String type,
     required String title,
     required String body,
     required String timeStr, // Recebe string HH:mm
@@ -95,7 +132,7 @@ class NotificationService {
       scheduledDate,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'ponto_alarms_v6',
+          'ponto_alarms_v7',
           'Alarmes de Ponto',
           channelDescription: 'Lembretes insistentes de ponto',
           importance: Importance.max,
@@ -113,25 +150,47 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
+      payload: 'alarm_$type',
     );
+
+    // REAL ALARM MIGRATION:
+    // We also schedule a real alarm that plays sound until stopped.
+    final alarmSettings = AlarmSettings(
+      id: id.abs(),
+      dateTime: scheduledDate,
+      assetAudioPath: 'assets/alarm.mp3',
+      loopAudio: true,
+      vibrate: true,
+      volume: 0.8,
+      fadeDuration: 3.0,
+      notificationTitle: title,
+      notificationBody: body,
+      enableNotificationOnKill: true,
+    );
+    
+    await Alarm.set(alarmSettings: alarmSettings);
   }
 
   static Future<void> cancelAlarm(int id) async {
     await _notifications.cancel(id.abs());
+    await Alarm.stop(id.abs());
   }
 
   static Future<void> rescheduleAllAlarms(models.AppSettings settings) async {
     await _notifications.cancelAll();
     
-    settings.alarms.forEach((type, alarm) async {
+    for (var entry in settings.alarms.entries) {
+      final type = entry.key;
+      final alarm = entry.value;
       if (alarm.enabled) {
         await scheduleAlarm(
           id: type.hashCode.abs(),
+          type: type,
           title: 'Lembrete de Ponto',
           body: 'Está na hora da sua batida de ${type.toUpperCase()}!',
           timeStr: alarm.time,
         );
       }
-    });
+    }
   }
 }
