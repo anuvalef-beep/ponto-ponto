@@ -76,11 +76,11 @@ class _MyAppState extends State<MyApp> {
 
   void _handleAlarmRing(AlarmSettings alarmSettings) {
     String type = "Ponto";
-    if (alarmSettings.notificationBody.contains("IDA")) type = "ida";
-    else if (alarmSettings.notificationBody.contains("VOLTA")) type = "volta";
-    else if (alarmSettings.notificationBody.contains("INICIO")) type = "inicio";
-    else if (alarmSettings.notificationBody.contains("FIM")) type = "fim";
-    else if (alarmSettings.notificationTitle.contains("Teste")) type = "Teste";
+    if (alarmSettings.notificationSettings.body.contains("IDA")) type = "ida";
+    else if (alarmSettings.notificationSettings.body.contains("VOLTA")) type = "volta";
+    else if (alarmSettings.notificationSettings.body.contains("INICIO")) type = "inicio";
+    else if (alarmSettings.notificationSettings.body.contains("FIM")) type = "fim";
+    else if (alarmSettings.notificationSettings.title.contains("Teste")) type = "Teste";
     
     Future.delayed(const Duration(milliseconds: 500), () {
       navigatorKey.currentState?.push(

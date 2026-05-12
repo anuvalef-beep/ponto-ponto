@@ -46,7 +46,7 @@ class AlarmScreen extends StatelessWidget {
                 'HORA DO PONTO!',
                 style: TextStyle(
                   fontSize: 32,
-                  fontWeight: FontWeight.black,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
                   letterSpacing: 2,
                   shadows: [

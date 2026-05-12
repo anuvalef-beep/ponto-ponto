@@ -89,10 +89,12 @@ class NotificationService {
       assetAudioPath: 'assets/alarm.mp3',
       loopAudio: true,
       vibrate: true,
-      volume: 0.8,
-      notificationTitle: 'Teste de Alarme',
-      notificationBody: 'O despertador real está funcionando!',
-      enableNotificationOnKill: true,
+      volumeSettings: VolumeSettings(volume: 0.8),
+      notificationSettings: NotificationSettings(
+        title: 'Teste de Alarme',
+        body: 'O despertador real está funcionando!',
+      ),
+      warningNotificationOnKill: true,
     );
     
     await Alarm.set(alarmSettings: alarmSettings);
@@ -161,11 +163,15 @@ class NotificationService {
       assetAudioPath: 'assets/alarm.mp3',
       loopAudio: true,
       vibrate: true,
-      volume: 0.8,
-      fadeDuration: 3.0,
-      notificationTitle: title,
-      notificationBody: body,
-      enableNotificationOnKill: true,
+      volumeSettings: VolumeSettings(
+        volume: 0.8,
+        fadeDuration: Duration(seconds: 3),
+      ),
+      notificationSettings: NotificationSettings(
+        title: title,
+        body: body,
+      ),
+      warningNotificationOnKill: true,
     );
     
     await Alarm.set(alarmSettings: alarmSettings);
