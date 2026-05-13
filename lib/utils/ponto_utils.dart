@@ -32,7 +32,7 @@ class PontoUtils {
     final minutes = (totalMinutes % 60).floor();
     
     final limitMinutes = 7 * 60 + 20; // 7:20
-    final extraMinutes = totalMinutes > limitMinutes ? totalMinutes - limitMinutes : 0;
+    final extraMinutes = totalMinutes > limitMinutes ? totalMinutes - limitMinutes : 0.0;
     final extraHours = (extraMinutes / 60).floor();
     final extraMins = (extraMinutes % 60).floor();
 

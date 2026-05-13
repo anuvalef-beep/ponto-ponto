@@ -115,8 +115,13 @@ class _ClockScreenState extends State<ClockScreen> {
     );
     
     if (picked != null) {
-      final now = DateTime.now();
-      final newTimestamp = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
+      final newTimestamp = DateTime(
+        punch.timestamp.year,
+        punch.timestamp.month,
+        punch.timestamp.day,
+        picked.hour,
+        picked.minute,
+      );
       
       final updatedPunches = log.punches.map((p) {
         return p.type == type 

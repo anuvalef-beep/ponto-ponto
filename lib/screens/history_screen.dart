@@ -88,9 +88,7 @@ class HistoryScreen extends StatelessWidget {
       final db = DatabaseService(uid: AppSignals.user.value!.uid);
       await db.deleteDayLog(log.date);
 
-      // Se for o log de hoje, limpa o sinal atual para resetar os botões de ponto
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      if (log.date == today) {
+      if (AppSignals.currentDayLog.value?.date == log.date) {
         AppSignals.currentDayLog.value = null;
       }
 
@@ -152,8 +150,8 @@ class HistoryScreen extends StatelessWidget {
             for (var log in logs) {
               final stats = PontoUtils.calculateWorkedHours(log);
               if (stats != null && !log.isDayOff) {
-                totalMonthlyMins += stats['totalMinutes'] as double;
-                totalExtraMins += stats['extraMinutes'] as double;
+                totalMonthlyMins += (stats['totalMinutes'] as num).toDouble();
+                totalExtraMins += (stats['extraMinutes'] as num).toDouble();
               }
             }
 
