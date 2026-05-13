@@ -9,7 +9,9 @@ import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/alarm_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'signals/app_signals.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'package:alarm/alarm.dart';
@@ -88,10 +90,12 @@ class _MyAppState extends State<MyApp> {
 
   void _handleAlarmRing(AlarmSettings alarmSettings) {
     String type = "Ponto";
-    if (alarmSettings.notificationSettings.body.contains("IDA")) type = "ida";
-    else if (alarmSettings.notificationSettings.body.contains("VOLTA")) type = "volta";
-    else if (alarmSettings.notificationSettings.body.contains("INICIO")) type = "inicio";
-    else if (alarmSettings.notificationSettings.body.contains("FIM")) type = "fim";
+    final body = alarmSettings.notificationSettings.body.toUpperCase();
+    
+    if (body.contains("ENTRADA")) type = "entrada";
+    else if (body.contains("PAUSA")) type = "pausa";
+    else if (body.contains("RETORNO")) type = "retorno";
+    else if (body.contains("FIM")) type = "fim";
     else if (alarmSettings.notificationSettings.title.contains("Teste")) type = "Teste";
     
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -145,9 +149,47 @@ class _MyAppState extends State<MyApp> {
           final user = snapshot.data;
           debugPrint('MyApp: Rebuilding Home (user: ${user?.uid})');
 
-          return user != null ? const MainScreen() : const LoginScreen();
+          return user != null ? const RootScreen() : const LoginScreen();
         },
       ),
     );
+  }
+}
+
+class RootScreen extends StatefulWidget {
+  const RootScreen({super.key});
+
+  @override
+  State<RootScreen> createState() => _RootScreenState();
+}
+
+class _RootScreenState extends State<RootScreen> {
+  bool? _hasSeenOnboarding;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOnboarding();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasSeenOnboarding == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        ),
+      );
+    }
+    return _hasSeenOnboarding! ? const MainScreen() : const OnboardingScreen();
   }
 }

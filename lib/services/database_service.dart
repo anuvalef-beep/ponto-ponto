@@ -78,10 +78,10 @@ class DatabaseService {
   Future<List<String>> uploadImages(List<File> files, String folder) async {
     List<String> urls = [];
     for (var file in files) {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.replaceAll('\\', '/').split('/').last}';
       final ref = _storage.ref().child('users/$uid/$folder/$fileName');
-      await ref.putFile(file);
-      final url = await ref.getDownloadURL();
+      final snapshot = await ref.putFile(file);
+      final url = await snapshot.ref.getDownloadURL();
       urls.add(url);
     }
     return urls;

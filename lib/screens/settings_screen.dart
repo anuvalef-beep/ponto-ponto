@@ -64,12 +64,16 @@ class SettingsScreen extends StatelessWidget {
           
           Watch((context) {
             final settings = AppSignals.settings.value;
+            final orderedKeys = ['entrada', 'pausa', 'retorno', 'fim'];
+            
             return Column(
-              children: settings.alarms.entries.map((entry) {
+              children: orderedKeys.map((key) {
+                final alarmSettings = settings.alarms[key];
+                if (alarmSettings == null) return const SizedBox();
                 return _buildAlarmTile(
                   context,
-                  type: entry.key,
-                  settings: entry.value,
+                  type: key,
+                  settings: alarmSettings,
                 );
               }).toList(),
             );
@@ -116,37 +120,80 @@ class SettingsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: GlassContainer(
-        child: ListTile(
-          onTap: () => _selectTime(context, type, settings),
-          leading: Icon(_getIconForType(type), color: AppTheme.primaryColor),
-          title: Text(type.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Row(
-            children: [
-              Text('Horário: ', style: TextStyle(color: Colors.grey.shade500)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  settings.time,
-                  style: const TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'RobotoMono',
+        child: Column(
+          children: [
+            ListTile(
+              onTap: () => _selectTime(context, type, settings),
+              leading: Icon(_getIconForType(type), color: AppTheme.primaryColor),
+              title: Text(type.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Row(
+                children: [
+                  Text('Horário: ', style: TextStyle(color: Colors.grey.shade500)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      settings.time,
+                      style: const TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'RobotoMono',
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  Icon(LucideIcons.edit2, size: 14, color: Colors.grey.shade400),
+                ],
+              ),
+              trailing: Switch(
+                value: settings.enabled,
+                onChanged: (val) => _toggleAlarm(type, settings, val),
+                activeColor: AppTheme.primaryColor,
+              ),
+            ),
+            if (settings.enabled)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0).copyWith(top: 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    for (int i = 1; i <= 7; i++)
+                      GestureDetector(
+                        onTap: () {
+                          final currentDays = List<int>.from(settings.activeDays);
+                          if (currentDays.contains(i)) {
+                            currentDays.remove(i);
+                          } else {
+                            currentDays.add(i);
+                          }
+                          _updateAlarm(type, AlarmSettings(time: settings.time, enabled: settings.enabled, activeDays: currentDays));
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: settings.activeDays.contains(i) ? AppTheme.primaryColor : Colors.grey.withOpacity(0.1),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'][i - 1],
+                            style: TextStyle(
+                              color: settings.activeDays.contains(i) ? Colors.white : Colors.grey.shade500,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(LucideIcons.edit2, size: 14, color: Colors.grey.shade400),
-            ],
-          ),
-          trailing: Switch(
-            value: settings.enabled,
-            onChanged: (val) => _toggleAlarm(type, settings, val),
-            activeColor: AppTheme.primaryColor,
-          ),
+            if (settings.enabled) const SizedBox(height: 8),
+          ],
         ),
       ),
     );
@@ -163,12 +210,12 @@ class SettingsScreen extends StatelessWidget {
     
     if (picked != null) {
       final newTime = "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
-      _updateAlarm(type, AlarmSettings(time: newTime, enabled: settings.enabled));
+      _updateAlarm(type, AlarmSettings(time: newTime, enabled: settings.enabled, activeDays: settings.activeDays));
     }
   }
 
   void _toggleAlarm(String type, AlarmSettings settings, bool enabled) {
-    _updateAlarm(type, AlarmSettings(time: settings.time, enabled: enabled));
+    _updateAlarm(type, AlarmSettings(time: settings.time, enabled: enabled, activeDays: settings.activeDays));
   }
 
   void _updateAlarm(String type, AlarmSettings newAlarm) {
@@ -196,6 +243,7 @@ class SettingsScreen extends StatelessWidget {
         title: 'Lembrete de Ponto',
         body: 'Está na hora da sua batida de $type!',
         timeStr: newAlarm.time,
+        activeDays: newAlarm.activeDays,
       );
     } else {
       NotificationService.cancelAlarm(type.hashCode.abs());

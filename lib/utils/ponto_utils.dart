@@ -4,7 +4,7 @@ class PontoUtils {
   static Map<String, dynamic>? calculateWorkedHours(DayLog log) {
     if (log.isDayOff) return {'total': 'FOLGA', 'isDayOff': true};
     
-    final punches = List<Punch>.from(log.punches)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final punches = _normalizePunches(log.punches);
     
     final entrada = punches.where((p) => p.type == PunchType.entrada).firstOrNull;
     if (entrada == null) return null;
@@ -36,8 +36,12 @@ class PontoUtils {
     final extraHours = (extraMinutes / 60).floor();
     final extraMins = (extraMinutes % 60).floor();
 
+    final totalStr = hours < 0 
+        ? "-${hours.abs().toString().padLeft(2, '0')}:${minutes.abs().toString().padLeft(2, '0')}"
+        : "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
+
     return {
-      'total': "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}",
+      'total': totalStr,
       'extra': extraMinutes > 0 
           ? "${extraHours.toString().padLeft(2, '0')}:${extraMins.toString().padLeft(2, '0')}" 
           : null,
@@ -47,7 +51,7 @@ class PontoUtils {
   }
 
   static int calculateWorkedMinutesSoFar(DayLog log, DateTime now) {
-    final punches = log.punches;
+    final punches = _normalizePunches(log.punches);
     if (punches.isEmpty) return 0;
 
     final entrada = punches.where((p) => p.type == PunchType.entrada).firstOrNull;
@@ -79,5 +83,44 @@ class PontoUtils {
 
     if (workedMs < 0) workedMs = 0;
     return (workedMs / (1000 * 60)).floor();
+  }
+
+  static List<Punch> _normalizePunches(List<Punch> punches) {
+    if (punches.isEmpty) return [];
+    
+    final order = {PunchType.entrada: 0, PunchType.pausa: 1, PunchType.retorno: 2, PunchType.fim: 3};
+    final sortedPunches = List<Punch>.from(punches)..sort((a, b) => order[a.type]!.compareTo(order[b.type]!));
+
+    List<Punch> normalized = [];
+    DateTime? previousTime;
+
+    for (var punch in sortedPunches) {
+      DateTime time = punch.timestamp;
+      
+      if (previousTime != null) {
+        final currMins = time.hour * 60 + time.minute;
+        final prevMins = previousTime.hour * 60 + previousTime.minute;
+        
+        DateTime normalizedTime = DateTime(
+          previousTime.year,
+          previousTime.month,
+          previousTime.day,
+          time.hour,
+          time.minute,
+          time.second,
+        );
+
+        if (currMins < prevMins) {
+          normalizedTime = normalizedTime.add(const Duration(days: 1));
+        }
+        
+        time = normalizedTime;
+        normalized.add(Punch(id: punch.id, type: punch.type, timestamp: normalizedTime, carPrefix: punch.carPrefix));
+      } else {
+        normalized.add(punch);
+      }
+      previousTime = time;
+    }
+    return normalized;
   }
 }

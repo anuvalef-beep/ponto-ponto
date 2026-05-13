@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ponto_models.dart';
 import '../signals/app_signals.dart';
 import '../widgets/glass_container.dart';
@@ -22,6 +25,10 @@ class ClockScreen extends StatefulWidget {
 class _ClockScreenState extends State<ClockScreen> {
   late Timer _timer;
   DateTime _now = DateTime.now();
+
+  late TextEditingController _prefixController;
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploadingPhoto = false;
 
   String _getGreeting() {
     final hour = _now.hour;
@@ -54,6 +61,9 @@ class _ClockScreenState extends State<ClockScreen> {
   @override
   void initState() {
     super.initState();
+    _prefixController = TextEditingController(text: AppSignals.currentCarPrefix.value);
+    _prefixController.addListener(_onPrefixChanged);
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
@@ -67,7 +77,15 @@ class _ClockScreenState extends State<ClockScreen> {
   @override
   void dispose() {
     _timer.cancel();
+    _prefixController.removeListener(_onPrefixChanged);
+    _prefixController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onPrefixChanged() async {
+    AppSignals.currentCarPrefix.value = _prefixController.text;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_car_prefix', _prefixController.text);
   }
 
   Future<void> _loadTodayLog() async {
@@ -91,6 +109,18 @@ class _ClockScreenState extends State<ClockScreen> {
     AppSignals.currentDayLog.value = log;
     if (log != null && log.carPrefix.isNotEmpty) {
       AppSignals.currentCarPrefix.value = log.carPrefix;
+      if (mounted) {
+        _prefixController.text = log.carPrefix;
+      }
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPrefix = prefs.getString('saved_car_prefix');
+      if (savedPrefix != null && savedPrefix.isNotEmpty) {
+        AppSignals.currentCarPrefix.value = savedPrefix;
+        if (mounted) {
+          _prefixController.text = savedPrefix;
+        }
+      }
     }
   }
 
@@ -117,6 +147,7 @@ class _ClockScreenState extends State<ClockScreen> {
       carPrefix: AppSignals.currentCarPrefix.value,
       punches: updatedPunches,
       damagePhotos: currentLog?.damagePhotos ?? [],
+      isDayOff: currentLog?.isDayOff ?? false,
     );
 
     await db.saveDayLog(newLog);
@@ -158,6 +189,7 @@ class _ClockScreenState extends State<ClockScreen> {
         carPrefix: log.carPrefix,
         punches: updatedPunches,
         damagePhotos: log.damagePhotos,
+        isDayOff: log.isDayOff,
       );
 
       final db = DatabaseService(uid: AppSignals.user.value!.uid);
@@ -165,6 +197,47 @@ class _ClockScreenState extends State<ClockScreen> {
       AppSignals.currentDayLog.value = newLog;
 
       _showToast('Horário corrigido com sucesso!');
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    if (AppSignals.user.value == null) return;
+    
+    final XFile? photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50);
+    if (photo == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+    _showToast('Enviando foto de avaria...');
+
+    try {
+      final db = DatabaseService(uid: AppSignals.user.value!.uid);
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      
+      final urls = await db.uploadImages([File(photo.path)], 'damages/$today');
+      
+      final currentLog = AppSignals.currentDayLog.value;
+      final logDate = currentLog?.date ?? today;
+      final updatedPhotos = <String>[
+        ...(currentLog?.damagePhotos ?? []),
+        ...urls,
+      ];
+      
+      final newLog = DayLog(
+        date: logDate,
+        carPrefix: AppSignals.currentCarPrefix.value,
+        punches: currentLog?.punches ?? [],
+        damagePhotos: updatedPhotos,
+        isDayOff: currentLog?.isDayOff ?? false,
+      );
+
+      await db.saveDayLog(newLog);
+      AppSignals.currentDayLog.value = newLog;
+
+      _showToast('Foto de avaria salva no histórico!');
+    } catch (e) {
+      _showToast('Erro ao salvar foto: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
     }
   }
 
@@ -203,7 +276,29 @@ class _ClockScreenState extends State<ClockScreen> {
               
               const SizedBox(height: 16),
 
-
+              // Prefix Input
+              GlassContainer(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.car, color: AppTheme.primaryColor),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: _prefixController,
+                          decoration: const InputDecoration(
+                            labelText: 'Prefixo do Veículo',
+                            border: InputBorder.none,
+                            isDense: true,
+                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
               const Spacer(),
               
@@ -277,6 +372,7 @@ class _ClockScreenState extends State<ClockScreen> {
 
                 return GridView.count(
                   shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
@@ -317,7 +413,25 @@ class _ClockScreenState extends State<ClockScreen> {
                 );
               }),
               
-              const Spacer(),
+              const SizedBox(height: 16),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isUploadingPhoto ? null : _takePhoto,
+                  icon: _isUploadingPhoto 
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(LucideIcons.camera),
+                  label: Text(_isUploadingPhoto ? 'ENVIANDO...' : 'ADICIONAR FOTO DE AVARIA'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent.withOpacity(0.8),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+
             ],
           ),
         ),

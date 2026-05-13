@@ -1,17 +1,23 @@
 class AlarmSettings {
   final String time; // HH:mm
   final bool enabled;
+  final List<int> activeDays; // 1 = Monday, 7 = Sunday
 
-  AlarmSettings({required this.time, this.enabled = false});
+  AlarmSettings({
+    required this.time, 
+    this.enabled = false,
+    this.activeDays = const [1, 2, 3, 4, 5],
+  });
 
   Map<String, dynamic> toMap() {
-    return {'time': time, 'enabled': enabled};
+    return {'time': time, 'enabled': enabled, 'activeDays': activeDays};
   }
 
   factory AlarmSettings.fromMap(Map<String, dynamic> map) {
     return AlarmSettings(
       time: map['time'] ?? '08:00',
       enabled: map['enabled'] ?? false,
+      activeDays: (map['activeDays'] as List<dynamic>?)?.cast<int>() ?? [1, 2, 3, 4, 5],
     );
   }
 }

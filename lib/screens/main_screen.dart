@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'clock_screen.dart';
 import 'history_screen.dart';
-import 'fleet_screen.dart';
 import 'settings_screen.dart';
 import '../theme/app_theme.dart';
 
@@ -19,7 +18,6 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const ClockScreen(),
     const HistoryScreen(),
-    const FleetScreen(),
     const SettingsScreen(),
   ];
 
@@ -55,10 +53,6 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(LucideIcons.history),
               label: 'Histórico',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(LucideIcons.car),
-              label: 'Frota',
             ),
             BottomNavigationBarItem(
               icon: Icon(LucideIcons.settings),

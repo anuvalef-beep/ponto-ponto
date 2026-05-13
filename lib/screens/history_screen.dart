@@ -5,10 +5,14 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../models/ponto_models.dart';
 import '../signals/app_signals.dart';
 import '../services/database_service.dart';
+import '../services/pdf_service.dart';
 import '../utils/ponto_utils.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -42,6 +46,50 @@ class HistoryScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _addPhotoToLog(BuildContext context, DayLog log) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 50);
+    if (photo == null || AppSignals.user.value == null) return;
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Salvando foto...')),
+      );
+    }
+
+    try {
+      final db = DatabaseService(uid: AppSignals.user.value!.uid);
+      final urls = await db.uploadImages([File(photo.path)], 'damages/${log.date}');
+      
+      final updatedPhotos = [...log.damagePhotos, ...urls];
+      final newLog = DayLog(
+        date: log.date,
+        carPrefix: log.carPrefix,
+        punches: log.punches,
+        damagePhotos: updatedPhotos,
+        isDayOff: log.isDayOff,
+      );
+
+      await db.saveDayLog(newLog);
+      
+      if (log.date == AppSignals.currentDayLog.value?.date) {
+        AppSignals.currentDayLog.value = newLog;
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto salva no histórico com sucesso!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao salvar foto: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Future<void> _shareToWhatsApp(BuildContext context, DayLog log) async {
@@ -129,6 +177,165 @@ class HistoryScreen extends StatelessWidget {
         );
       }
     }
+  }
+
+  Future<void> _showEditLogDialog(BuildContext context, [DayLog? existingLog]) async {
+    DateTime selectedDate = existingLog != null ? DateTime.parse(existingLog.date) : DateTime.now();
+    bool isDayOff = existingLog?.isDayOff ?? false;
+    
+    // Extract existing times if any
+    TimeOfDay? entradaTime;
+    TimeOfDay? pausaTime;
+    TimeOfDay? retornoTime;
+    TimeOfDay? fimTime;
+
+    if (existingLog != null) {
+      for (var p in existingLog.punches) {
+        if (p.type == PunchType.entrada) entradaTime = TimeOfDay.fromDateTime(p.timestamp);
+        if (p.type == PunchType.pausa) pausaTime = TimeOfDay.fromDateTime(p.timestamp);
+        if (p.type == PunchType.retorno) retornoTime = TimeOfDay.fromDateTime(p.timestamp);
+        if (p.type == PunchType.fim) fimTime = TimeOfDay.fromDateTime(p.timestamp);
+      }
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Widget buildTimeSelector(String label, TimeOfDay? time, Function(TimeOfDay?) onChanged) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(label, style: const TextStyle(color: Colors.white)),
+                  TextButton(
+                    onPressed: isDayOff ? null : () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: time ?? const TimeOfDay(hour: 8, minute: 0),
+                      );
+                      if (picked != null) onChanged(picked);
+                    },
+                    child: Text(
+                      time != null ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}' : '--:--',
+                      style: TextStyle(color: isDayOff ? Colors.grey : AppTheme.primaryColor),
+                    ),
+                  ),
+                  if (time != null && !isDayOff)
+                    IconButton(
+                      icon: const Icon(LucideIcons.x, color: Colors.red, size: 16),
+                      onPressed: () => onChanged(null),
+                    ),
+                ],
+              );
+            }
+
+            return AlertDialog(
+              backgroundColor: Colors.grey.shade900,
+              title: Text(existingLog == null ? 'Adicionar Registro' : 'Editar Registro', style: const TextStyle(color: Colors.white)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Date Selector
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Data', style: TextStyle(color: Colors.white)),
+                        TextButton(
+                          onPressed: existingLog != null ? null : () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                            );
+                            if (picked != null) setState(() => selectedDate = picked);
+                          },
+                          child: Text(DateFormat('dd/MM/yyyy').format(selectedDate), style: const TextStyle(color: AppTheme.primaryColor)),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Colors.grey),
+                    // Folga Checkbox
+                    SwitchListTile(
+                      title: const Text('Folga', style: TextStyle(color: Colors.white)),
+                      value: isDayOff,
+                      activeColor: AppTheme.primaryColor,
+                      onChanged: (val) => setState(() => isDayOff = val),
+                    ),
+                    const Divider(color: Colors.grey),
+                    // Times
+                    buildTimeSelector('Entrada', entradaTime, (v) => setState(() => entradaTime = v)),
+                    buildTimeSelector('Pausa', pausaTime, (v) => setState(() => pausaTime = v)),
+                    buildTimeSelector('Retorno', retornoTime, (v) => setState(() => retornoTime = v)),
+                    buildTimeSelector('Fim', fimTime, (v) => setState(() => fimTime = v)),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('CANCELAR', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (AppSignals.user.value == null) return;
+                    
+                    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+                    
+                    List<Punch> newPunches = [];
+                    if (!isDayOff) {
+                      DateTime baseDate = selectedDate;
+                      
+                      void addPunch(PunchType type, TimeOfDay? time) {
+                        if (time != null) {
+                          newPunches.add(Punch(
+                            id: const Uuid().v4(),
+                            type: type,
+                            timestamp: DateTime(baseDate.year, baseDate.month, baseDate.day, time.hour, time.minute),
+                            carPrefix: existingLog?.carPrefix ?? AppSignals.currentCarPrefix.value,
+                          ));
+                        }
+                      }
+                      
+                      addPunch(PunchType.entrada, entradaTime);
+                      addPunch(PunchType.pausa, pausaTime);
+                      addPunch(PunchType.retorno, retornoTime);
+                      addPunch(PunchType.fim, fimTime);
+                    }
+                    
+                    final newLog = DayLog(
+                      date: dateStr,
+                      carPrefix: existingLog?.carPrefix ?? AppSignals.currentCarPrefix.value,
+                      punches: newPunches,
+                      damagePhotos: existingLog?.damagePhotos ?? [],
+                      isDayOff: isDayOff,
+                    );
+
+                    final db = DatabaseService(uid: AppSignals.user.value!.uid);
+                    await db.saveDayLog(newLog);
+                    
+                    if (dateStr == AppSignals.currentDayLog.value?.date) {
+                      AppSignals.currentDayLog.value = newLog;
+                    }
+                    
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Registro salvo com sucesso!'), backgroundColor: Colors.green),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+                  child: const Text('SALVAR', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -229,6 +436,37 @@ class HistoryScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0).copyWith(bottom: 16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await PDFService.generateAndPrintMonthlyReport(
+                            logs: logs,
+                            month: AppSignals.selectedMonth.value,
+                            userName: AppSignals.user.value?.displayName ?? 'Usuário',
+                          );
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Erro ao gerar PDF: $e'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(LucideIcons.fileText),
+                      label: const Text('Exportar Relatório PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor.withOpacity(0.8),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ),
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -260,6 +498,14 @@ class HistoryScreen extends StatelessWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          IconButton(
+                            icon: const Icon(LucideIcons.edit, color: Colors.orange),
+                            onPressed: () => _showEditLogDialog(context, log),
+                          ),
+                          IconButton(
+                            icon: const Icon(LucideIcons.camera, color: Colors.blueAccent),
+                            onPressed: () => _addPhotoToLog(context, log),
+                          ),
                           IconButton(
                             icon: const Icon(LucideIcons.share2, color: Colors.green),
                             onPressed: () => _shareToWhatsApp(context, log),
@@ -355,10 +601,15 @@ class HistoryScreen extends StatelessWidget {
         ],
       );
     },
-  );
-}),
-    );
-  }
+  ); // Ends StreamBuilder
+}), // Ends Watch
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showEditLogDialog(context),
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(LucideIcons.plus, color: Colors.white),
+      ),
+    ); // Ends Scaffold
+  } // Ends build
 
   IconData _getIconForType(PunchType type) {
     switch (type) {

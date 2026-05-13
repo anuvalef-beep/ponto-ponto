@@ -14,7 +14,9 @@ class NotificationService {
     tz.initializeTimeZones();
     try {
       tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('Erro ao definir timezone: $e');
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -82,12 +84,15 @@ class NotificationService {
     required String title,
     required String body,
     required String timeStr, // Recebe string HH:mm
+    required List<int> activeDays, // 1 = Seg, 7 = Dom
   }) async {
     final parts = timeStr.split(':');
     if (parts.length != 2) return;
     
-    final hour = int.parse(parts[0]);
-    final minute = int.parse(parts[1]);
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null || minute == null) return;
 
     final now = tz.TZDateTime.now(tz.local);
     var scheduledDate = tz.TZDateTime(
@@ -103,7 +108,13 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-
+    if (activeDays.isNotEmpty) {
+      while (!activeDays.contains(scheduledDate.weekday)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+    } else {
+      return; // Se nenhum dia foi selecionado, não agenda nada
+    }
 
     // REAL ALARM MIGRATION:
     // We also schedule a real alarm that plays sound until stopped.
@@ -113,13 +124,15 @@ class NotificationService {
       assetAudioPath: 'assets/alarm.mp3',
       loopAudio: true,
       vibrate: true,
+      androidFullScreenIntent: true, // Garante que a tela ligue no Android
       volumeSettings: VolumeSettings.fade(
         volume: 0.8,
-        fadeDuration: Duration(seconds: 3),
+        fadeDuration: const Duration(seconds: 3),
       ),
       notificationSettings: NotificationSettings(
         title: title,
         body: body,
+        stopButton: 'PARAR', // Botão para parar direto na notificação
       ),
       warningNotificationOnKill: true,
     );
@@ -134,6 +147,7 @@ class NotificationService {
 
   static Future<void> rescheduleAllAlarms(models.AppSettings settings) async {
     await _notifications.cancelAll();
+    await Alarm.stopAll(); // Importante: limpa alarmes antigos do pacote Alarm
     
     for (var entry in settings.alarms.entries) {
       final type = entry.key;
@@ -145,6 +159,7 @@ class NotificationService {
           title: 'Lembrete de Ponto',
           body: 'Está na hora da sua batida de ${type.toUpperCase()}!',
           timeStr: alarm.time,
+          activeDays: alarm.activeDays,
         );
       }
     }
