@@ -9,6 +9,7 @@ import '../signals/app_signals.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import '../services/database_service.dart';
+import '../utils/ponto_utils.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class ClockScreen extends StatefulWidget {
@@ -21,6 +22,34 @@ class ClockScreen extends StatefulWidget {
 class _ClockScreenState extends State<ClockScreen> {
   late Timer _timer;
   DateTime _now = DateTime.now();
+
+  String _getGreeting() {
+    final hour = _now.hour;
+    if (hour < 5) return 'Boa madrugada';
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
+
+  void _showToast(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(isError ? LucideIcons.alertCircle : LucideIcons.checkCircle2, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.bold))),
+          ],
+        ),
+        backgroundColor: isError ? Colors.redAccent : AppTheme.accentColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        elevation: 0,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -93,12 +122,7 @@ class _ClockScreenState extends State<ClockScreen> {
     await db.saveDayLog(newLog);
     AppSignals.currentDayLog.value = newLog;
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${type.name.toUpperCase()} registrado com sucesso!'),
-        backgroundColor: AppTheme.accentColor,
-      ),
-    );
+    _showToast('${type.name.toUpperCase()} registrado com sucesso!');
   }
 
   Future<void> _editPunch(PunchType type) async {
@@ -140,9 +164,7 @@ class _ClockScreenState extends State<ClockScreen> {
       await db.saveDayLog(newLog);
       AppSignals.currentDayLog.value = newLog;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Horário corrigido com sucesso!')),
-      );
+      _showToast('Horário corrigido com sucesso!');
     }
   }
 
@@ -166,7 +188,7 @@ class _ClockScreenState extends State<ClockScreen> {
                         style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
                       ),
                       Text(
-                        'Bom dia, ${AppSignals.user.value?.displayName?.split(' ').first ?? 'Motorista'}!',
+                        '${_getGreeting()}, ${AppSignals.user.value?.displayName?.split(' ').first ?? 'Motorista'}!',
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -198,11 +220,61 @@ class _ClockScreenState extends State<ClockScreen> {
               
               const Spacer(),
               
+              Watch((context) {
+                final log = AppSignals.currentDayLog.value;
+                if (log == null) return const SizedBox();
+                
+                final workedMins = PontoUtils.calculateWorkedMinutesSoFar(log, _now);
+                final limitMins = 7 * 60 + 20; // 440 mins
+                double progress = workedMins / limitMins;
+                if (progress > 1.0) progress = 1.0;
+                
+                final hours = (workedMins / 60).floor();
+                final mins = workedMins % 60;
+                
+                return Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Progresso do Turno', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                        Text('${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')} / 07:20', 
+                             style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: Colors.white.withOpacity(0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progress == 1.0 ? Colors.amber : AppTheme.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+
+              const Spacer(),
+              
               // Punch Buttons Grid
               Watch((context) {
                 final log = AppSignals.currentDayLog.value;
                 final punches = log?.punches ?? [];
                 
+                final hasEntrada = punches.any((p) => p.type == PunchType.entrada);
+                final hasPausa = punches.any((p) => p.type == PunchType.pausa);
+                final hasRetorno = punches.any((p) => p.type == PunchType.retorno);
+                final hasFim = punches.any((p) => p.type == PunchType.fim);
+                
+                final isNextEntrada = !hasEntrada;
+                final isNextPausa = hasEntrada && !hasPausa;
+                final isNextRetorno = hasPausa && !hasRetorno;
+                final isNextFim = hasRetorno && !hasFim;
+
                 return GridView.count(
                   shrinkWrap: true,
                   crossAxisCount: 2,
@@ -214,28 +286,32 @@ class _ClockScreenState extends State<ClockScreen> {
                       PunchType.entrada, 
                       LucideIcons.play, 
                       AppTheme.primaryColor,
-                      punches.any((p) => p.type == PunchType.entrada),
+                      hasEntrada,
+                      isNextEntrada,
                     ),
                     _buildPunchButton(
                       'PAUSA', 
                       PunchType.pausa, 
                       LucideIcons.pause, 
                       Colors.orangeAccent,
-                      punches.any((p) => p.type == PunchType.pausa),
+                      hasPausa,
+                      isNextPausa,
                     ),
                     _buildPunchButton(
                       'RETORNO', 
                       PunchType.retorno, 
                       LucideIcons.rotateCcw, 
                       Colors.blueAccent,
-                      punches.any((p) => p.type == PunchType.retorno),
+                      hasRetorno,
+                      isNextRetorno,
                     ),
                     _buildPunchButton(
                       'FIM', 
                       PunchType.fim, 
                       LucideIcons.square, 
                       Colors.redAccent,
-                      punches.any((p) => p.type == PunchType.fim),
+                      hasFim,
+                      isNextFim,
                     ),
                   ],
                 );
@@ -249,21 +325,13 @@ class _ClockScreenState extends State<ClockScreen> {
     );
   }
 
-  Widget _buildPunchButton(String label, PunchType type, IconData icon, Color color, bool isDone) {
-    return GestureDetector(
-      onTap: () {
-        if (isDone) {
-          _editPunch(type);
-        } else {
-          _handlePunch(type);
-        }
-      },
-      child: GlassContainer(
-        color: isDone ? color.withOpacity(0.1) : color.withOpacity(0.1),
-        border: Border.all(
-          color: isDone ? color : color.withOpacity(0.3),
-          width: 2,
-        ),
+  Widget _buildPunchButton(String label, PunchType type, IconData icon, Color color, bool isDone, bool isNext) {
+    Widget button = GlassContainer(
+      color: isDone ? color.withOpacity(0.1) : color.withOpacity(0.05),
+      border: Border.all(
+        color: isDone ? color : (isNext ? color : color.withOpacity(0.2)),
+        width: isNext ? 3 : 2,
+      ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -281,7 +349,7 @@ class _ClockScreenState extends State<ClockScreen> {
                 color: isDone ? color : color.withOpacity(0.8),
               ),
             ),
-            if (isDone) ...[
+            if (isDone && AppSignals.currentDayLog.value != null) ...[
               const SizedBox(height: 4),
               Text(
                 DateFormat('HH:mm').format(
@@ -292,7 +360,23 @@ class _ClockScreenState extends State<ClockScreen> {
             ]
           ],
         ),
-      ),
+      );
+
+    if (isNext) {
+      button = button.animate(onPlay: (controller) => controller.repeat(reverse: true))
+                     .scaleXY(end: 1.05, duration: 1000.ms)
+                     .shimmer(duration: 2000.ms, color: color.withOpacity(0.3));
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (isDone) {
+          _editPunch(type);
+        } else {
+          _handlePunch(type);
+        }
+      },
+      child: button,
     );
   }
 }

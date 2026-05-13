@@ -6,6 +6,8 @@ import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import '../signals/app_signals.dart';
 import '../services/database_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ponto_models.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:intl/intl.dart';
@@ -27,6 +29,35 @@ class _FleetScreenState extends State<FleetScreen> {
     super.initState();
     _prefixController = TextEditingController(text: AppSignals.currentCarPrefix.value);
     _loadTodayLog();
+    _prefixController.addListener(_onPrefixChanged);
+  }
+
+  Future<void> _onPrefixChanged() async {
+    AppSignals.currentCarPrefix.value = _prefixController.text;
+    if (_prefixController.text.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_car_prefix', _prefixController.text);
+    }
+  }
+
+  void _showToast(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(isError ? LucideIcons.alertCircle : LucideIcons.checkCircle2, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.bold))),
+          ],
+        ),
+        backgroundColor: isError ? Colors.redAccent : AppTheme.accentColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        elevation: 0,
+      ),
+    );
   }
 
   Future<void> _loadTodayLog() async {
@@ -55,11 +86,21 @@ class _FleetScreenState extends State<FleetScreen> {
       if (mounted) {
         _prefixController.text = log.carPrefix;
       }
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPrefix = prefs.getString('saved_car_prefix');
+      if (savedPrefix != null && savedPrefix.isNotEmpty) {
+        AppSignals.currentCarPrefix.value = savedPrefix;
+        if (mounted) {
+          _prefixController.text = savedPrefix;
+        }
+      }
     }
   }
 
   @override
   void dispose() {
+    _prefixController.removeListener(_onPrefixChanged);
     _prefixController.dispose();
     super.dispose();
   }
@@ -112,7 +153,9 @@ class _FleetScreenState extends State<FleetScreen> {
                               border: InputBorder.none,
                             ),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                            onChanged: (val) => AppSignals.currentCarPrefix.value = val,
+                            onChanged: (val) {
+              // Já tratado pelo listener no initState
+            },
                           ),
                         ),
                         Text('Identifique o veículo atual', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
@@ -281,16 +324,10 @@ class _FleetScreenState extends State<FleetScreen> {
               setState(() {
                 _damagePhotos.clear();
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vistoria e fotos salvas com sucesso!')),
-              );
+              _showToast('Vistoria e fotos salvas com sucesso!');
             }
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Erro ao salvar vistoria: $e'), backgroundColor: Colors.red),
-              );
-            }
+            _showToast('Erro ao salvar vistoria: $e', isError: true);
           } finally {
             if (mounted) setState(() => _isUploading = false);
           }

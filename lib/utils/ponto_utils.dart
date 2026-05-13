@@ -45,4 +45,39 @@ class PontoUtils {
       'extraMinutes': extraMinutes,
     };
   }
+
+  static int calculateWorkedMinutesSoFar(DayLog log, DateTime now) {
+    final punches = log.punches;
+    if (punches.isEmpty) return 0;
+
+    final entrada = punches.where((p) => p.type == PunchType.entrada).firstOrNull;
+    if (entrada == null) return 0;
+
+    final pausa = punches.where((p) => p.type == PunchType.pausa).firstOrNull;
+    final retorno = punches.where((p) => p.type == PunchType.retorno).firstOrNull;
+    final fim = punches.where((p) => p.type == PunchType.fim).firstOrNull;
+
+    int workedMs = 0;
+
+    if (fim != null) {
+      if (pausa != null && retorno != null) {
+        workedMs = (pausa.timestamp.difference(entrada.timestamp).inMilliseconds) + 
+                   (fim.timestamp.difference(retorno.timestamp).inMilliseconds);
+      } else {
+        workedMs = fim.timestamp.difference(entrada.timestamp).inMilliseconds;
+      }
+    } else {
+      if (pausa != null && retorno != null) {
+         workedMs = (pausa.timestamp.difference(entrada.timestamp).inMilliseconds) + 
+                   (now.difference(retorno.timestamp).inMilliseconds);
+      } else if (pausa != null && retorno == null) {
+         workedMs = pausa.timestamp.difference(entrada.timestamp).inMilliseconds;
+      } else {
+         workedMs = now.difference(entrada.timestamp).inMilliseconds;
+      }
+    }
+
+    if (workedMs < 0) workedMs = 0;
+    return (workedMs / (1000 * 60)).floor();
+  }
 }
