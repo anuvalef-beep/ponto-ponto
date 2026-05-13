@@ -42,6 +42,7 @@ class PontoUtils {
           ? "${extraHours.toString().padLeft(2, '0')}:${extraMins.toString().padLeft(2, '0')}" 
           : null,
       'totalMinutes': totalMinutes,
+      'extraMinutes': extraMinutes,
     };
   }
 }

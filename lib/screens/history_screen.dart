@@ -146,10 +146,65 @@ class HistoryScreen extends StatelessWidget {
             // Sort logs by date descending
             logs.sort((a, b) => b.date.compareTo(a.date));
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: logs.length,
-              itemBuilder: (context, index) {
+            double totalMonthlyMins = 0;
+            double totalExtraMins = 0;
+
+            for (var log in logs) {
+              final stats = PontoUtils.calculateWorkedHours(log);
+              if (stats != null && !log.isDayOff) {
+                totalMonthlyMins += stats['totalMinutes'] as double;
+                totalExtraMins += stats['extraMinutes'] as double;
+              }
+            }
+
+            final monthlyHours = (totalMonthlyMins / 60).floor();
+            final monthlyMins = (totalMonthlyMins % 60).floor();
+            final monthlyExtraHours = (totalExtraMins / 60).floor();
+            final monthlyExtraMins = (totalExtraMins % 60).floor();
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GlassContainer(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              const Text('Total do Mês', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${monthlyHours.toString().padLeft(2, '0')}:${monthlyMins.toString().padLeft(2, '0')}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          Container(width: 1, height: 40, color: Colors.grey.shade800),
+                          Column(
+                            children: [
+                              const Text('Horas Extras', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${monthlyExtraHours.toString().padLeft(2, '0')}:${monthlyExtraMins.toString().padLeft(2, '0')}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.amber),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: logs.length,
+                    itemBuilder: (context, index) {
                 final log = logs[index];
                 final stats = PontoUtils.calculateWorkedHours(log);
                 
@@ -257,8 +312,9 @@ class HistoryScreen extends StatelessWidget {
                   ),
                 );
               },
-            );
-          },
+            ),
+          );
+        },
         );
       }),
     );
