@@ -13,6 +13,37 @@ import 'package:url_launcher/url_launcher.dart';
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            elevation: 0,
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(child: CircularProgressIndicator());
+                },
+                errorBuilder: (context, error, stackTrace) => const Icon(LucideIcons.imageOff, color: Colors.red, size: 64),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _shareToWhatsApp(BuildContext context, DayLog log) async {
     try {
       final date = DateFormat('dd/MM/yyyy').format(DateTime.parse(log.date));
@@ -279,10 +310,12 @@ class HistoryScreen extends StatelessWidget {
                                     itemBuilder: (context, i) {
                                       return Padding(
                                         padding: const EdgeInsets.only(right: 8.0),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Image.network(
-                                            log.damagePhotos[i],
+                                        child: GestureDetector(
+                                          onTap: () => _showFullScreenImage(context, log.damagePhotos[i]),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.network(
+                                              log.damagePhotos[i],
                                             width: 100,
                                             height: 100,
                                             fit: BoxFit.cover,
