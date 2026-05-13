@@ -316,23 +316,24 @@ class HistoryScreen extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(8),
                                             child: Image.network(
                                               log.damagePhotos[i],
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder: (context, child, progress) {
-                                              if (progress == null) return child;
-                                              return Container(
-                                                width: 100,
-                                                height: 100,
-                                                color: Colors.grey.shade800,
-                                                child: const Center(child: CircularProgressIndicator()),
-                                              );
-                                            },
-                                            errorBuilder: (context, error, stackTrace) => Container(
                                               width: 100,
                                               height: 100,
-                                              color: Colors.red.withOpacity(0.1),
-                                              child: const Center(child: Icon(LucideIcons.imageOff, color: Colors.red)),
+                                              fit: BoxFit.cover,
+                                              loadingBuilder: (context, child, progress) {
+                                                if (progress == null) return child;
+                                                return Container(
+                                                  width: 100,
+                                                  height: 100,
+                                                  color: Colors.grey.shade800,
+                                                  child: const Center(child: CircularProgressIndicator()),
+                                                );
+                                              },
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                width: 100,
+                                                height: 100,
+                                                color: Colors.red.withOpacity(0.1),
+                                                child: const Center(child: Icon(LucideIcons.imageOff, color: Colors.red)),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -350,10 +351,12 @@ class HistoryScreen extends StatelessWidget {
                 );
               },
             ),
-          );
-        },
-        );
-      }),
+          ),
+        ],
+      );
+    },
+  );
+}),
     );
   }
 
