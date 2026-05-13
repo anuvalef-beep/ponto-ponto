@@ -177,6 +177,10 @@ class _FleetScreenState extends State<FleetScreen> {
                                   if (progress == null) return child;
                                   return Container(color: Colors.grey.shade800, child: const Center(child: CircularProgressIndicator()));
                                 },
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: Colors.red.withOpacity(0.1),
+                                  child: const Icon(LucideIcons.imageOff, color: Colors.red),
+                                ),
                               )
                             : Image.file(File(_damagePhotos[index - networkPhotos.length].path), fit: BoxFit.cover),
                       ),
@@ -279,6 +283,12 @@ class _FleetScreenState extends State<FleetScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Vistoria e fotos salvas com sucesso!')),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Erro ao salvar vistoria: $e'), backgroundColor: Colors.red),
               );
             }
           } finally {

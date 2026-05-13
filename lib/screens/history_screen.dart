@@ -297,6 +297,12 @@ class HistoryScreen extends StatelessWidget {
                                                 child: const Center(child: CircularProgressIndicator()),
                                               );
                                             },
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              width: 100,
+                                              height: 100,
+                                              color: Colors.red.withOpacity(0.1),
+                                              child: const Center(child: Icon(LucideIcons.imageOff, color: Colors.red)),
+                                            ),
                                           ),
                                         ),
                                       );
