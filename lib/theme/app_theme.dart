@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const primaryColor = Color(0xFF6366F1); // Indigo 500
-  static const secondaryColor = Color(0xFF3B82F6); // Blue 500
-  static const accentColor = Color(0xFF10B981); // Emerald 500
+  static const Color primaryColor = Color(0xFF6366F1); // Indigo 500
+  static const Color secondaryColor = Color(0xFF3B82F6); // Blue 500
+  static const Color accentColor = Color(0xFF10B981); // Emerald 500
   
-  static const darkBg = Color(0xFF0F172A); // Slate 900
-  static const darkSurface = Color(0xFF1E293B); // Slate 800
+  static const Color darkBg = Color(0xFF0F172A); // Slate 900
+  static const Color backgroundColor = darkBg;
+  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
   
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
