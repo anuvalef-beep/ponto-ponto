@@ -26,7 +26,7 @@ class NotificationService {
     );
 
     await _notifications.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         if (response.payload != null) {
           AppSignals.incomingNotification.value = response.payload;
@@ -141,7 +141,7 @@ class NotificationService {
   }
 
   static Future<void> cancelAlarm(int id) async {
-    await _notifications.cancel(id.abs());
+    await _notifications.cancel(id: id.abs());
     await Alarm.stop(id.abs());
   }
 

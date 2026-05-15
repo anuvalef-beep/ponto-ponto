@@ -8,7 +8,6 @@ import 'package:ponto_ponto/models/app_settings.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
@@ -54,7 +53,7 @@ class AuthService {
       debugPrint('AuthService: Iniciando Google Sign In...');
       AppSignals.isLoading.value = true;
       
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
       if (googleUser == null) {
         debugPrint('AuthService: Google Sign In cancelado pelo usuário');
         return null;
@@ -62,7 +61,6 @@ class AuthService {
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
@@ -89,8 +87,8 @@ class AuthService {
       AppSignals.isLoading.value = true;
       
       // Limpa a sessão do Google e do Firebase
-      await _googleSignIn.signOut();
-      await _googleSignIn.disconnect().catchError((e) => debugPrint('Erro ao desconectar Google: $e'));
+      await GoogleSignIn.instance.signOut();
+      await GoogleSignIn.instance.disconnect().catchError((e) => debugPrint('Erro ao desconectar Google: $e'));
       await _auth.signOut();
       
       // Limpa os estados locais para não sobrar rastro da conta anterior
